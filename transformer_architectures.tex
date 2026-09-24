@@ -1,9 +1,125 @@
 \label{sec:arch}
+\subsection{Lifted \strips Transformer}
+\label{sec:ls-transformer}
+The Lifted \strips (LS) Transformer extends the \strips Transformer of~\citet{nunez2026strips} from propositional to lifted action models. It consists of a single self-attention block with one head for each predicate $p$, which tracks the truth values of its ground instances along the trace. For a precondition $p(\mathbf{o})$ of an action $a_i$, this requires identifying preceding effects on the same ground instance and selecting the most recent one. In the lifted setting, matching the same ground instance requires matching both the predicate and its object arguments.
 
-\textbf{Carlos - comentar que applicability supervision sería aplicable al LB transformer también pero, como no podemos hacer symbolic alignment, no se podría extraer \strips model. Por tanto, en nuestros experimentos no usamos applicability supervision con LB.}
+We describe how a \strips model
+$M=\langle\mathcal{P},A\rangle$ is represented by the LS Transformer.
+For each predicate $p\in\mathcal{P}$, action schema $\alpha\in A$, and valid
+action pattern $\alpha[\rho]$, the LS Transformer has three scalar values
+$q_{p,\alpha,\rho}$, $k_{p,\alpha,\rho}$, and $v_{p,\alpha,\rho}$ in
+$[0,1]$, used in its query, key, and value computations. In the binary
+representation of $M$, these values are
+\begin{align}
+q_M(p,\alpha,\rho)
+&=
+\mathbb{I}\!\left[
+p(x_{\rho_1},\ldots,x_{\rho_r})\in\mathrm{pre}(\alpha)
+\right],\\
+k_M(p,\alpha,\rho)
+&=
+\mathbb{I}\!\left[
+p(x_{\rho_1},\ldots,x_{\rho_r})
+\in\mathrm{add}(\alpha)\cup\mathrm{del}(\alpha)
+\right],\\
+v_M(p,\alpha,\rho)
+&=
+\mathbb{I}\!\left[
+p(x_{\rho_1},\ldots,x_{\rho_r})\in\mathrm{del}(\alpha)
+\right].
+\end{align}
+Thus, they specify the preconditions and effects of every action schema.
+During learning, $q$, $k$, and $v$ are differentiable relaxations of these
+binary values; their parameterization is detailed in
+Appendix~\ref{app:strips-transformer}.
 
-can remove the need for final-state observations (no goal actions) -\> STRIPS Transformer
-(first method that does not require transitions PDDL) value (tambien conexion con B-RASP and alignment
+The head for predicate $p$ compares an occurrence of $p$ in the current action
+$a_i=\alpha_i(\mathbf{o}_i)$ with an occurrence in another action
+$a_j=\alpha_j(\mathbf{o}_j)$. Let $\rho$ be the action pattern specifying the
+occurrence of $p$ in $a_i$, and $\sigma$ the pattern specifying its occurrence
+in $a_j$. We write
+$\mathbf{o}_i^\rho=(o_{i,\rho_1},\ldots,o_{i,\rho_r})$
+for the object arguments selected by $\rho$. The head computes
+\begin{align}
+S_{p,\rho,\sigma}(i,j)
+&=
+q_{p,\alpha_i,\rho}\,
+k_{p,\alpha_j,\sigma}\,
+\mathbb{I}\!\left[
+\mathbf{o}_i^\rho=\mathbf{o}_j^\sigma
+\right].
+\end{align}
+The $q$ term indicates whether the occurrence in $a_i$ is a precondition,
+the $k$ term whether the occurrence in $a_j$ is an effect, and the indicator
+ensures that both refer to the same ground instance of $p$. The equality test
+is implemented exactly using one-hot object representations and structured
+query and key projections, as detailed in
+Appendix~\ref{app:strips-transformer}.
+
+Strict future masking sets these scores to zero for $j\geq i$. We then use
+stick-breaking attention~\citep{tan2025scaling}. Let
+$$
+\bar S_{p,\rho}(i,j)
+=
+\sum_\sigma S_{p,\rho,\sigma}(i,j).
+$$
+The resulting weight of an effect pattern $\sigma$ at position $j$ is
+$$
+\widetilde S_{p,\rho,\sigma}(i,j)
+=
+S_{p,\rho,\sigma}(i,j)
+\prod_{k=j+1}^{i-1}
+\left(1-\bar S_{p,\rho}(i,k)\right).
+$$
+For binary parameters, this selects the rightmost preceding action that
+affects the ground predicate instance represented by $(p,\rho)$. Note that no explicit
+maximum or positional encoding is required.
+
+The output associated with this precondition is
+$$
+Y_{p,\rho}(i)
+=
+\sum_{j<i}\sum_\sigma
+\widetilde S_{p,\rho,\sigma}(i,j)
+v_{p,\alpha_j,\sigma}.
+$$
+Since $v$ distinguishes delete from add effects, $Y_{p,\rho}(i)=1$ for
+binary parameters exactly when the most recent matching effect makes this
+precondition false. The outputs are combined over all possible
+preconditions using a continuous OR,
+$$
+Y_\theta(i)
+=
+1-
+\prod_{p\in\mathcal{P}}
+\prod_{\rho}
+\left(1-Y_{p,\rho}(i)\right).
+$$
+Thus, $Y_\theta(i)\in[0,1]$ represents the degree to which action $a_i$ is
+inapplicable. With $\theta=\theta_M$, this computation agrees exactly with
+the applicability induced by $M$.
+
+Initial states are incorporated into the same computation using setup
+actions with fixed parameters. The action $\texttt{init-start}$ initializes
+all ground predicate instances to false, and each
+$\texttt{init-}p(\mathbf{o})$ action sets $p(\mathbf{o})$ to true.
+For final-state supervision, a setup action
+$\texttt{test-}p(\mathbf{o})$ has $p(\mathbf{o})$ as its only precondition
+and no effects. Its applicability after a trace therefore corresponds to
+the truth value of $p(\mathbf{o})$ in the resulting state. Under
+applicability supervision, $Y_\theta(i)$ is supervised directly on the
+domain actions; under final-state supervision, all domain actions are
+applicable and the final-state labels supervise the corresponding
+$\texttt{test-}p$ actions. 
+
+Finally, the learned parameters are indexed by predicates, action schemas,
+and action patterns, but not by object identities or by the number $N$ of
+objects. Changing $N$ only changes the fixed object representations used to
+implement the equality test above. The same parameters can therefore be
+instantiated on problems with a different number of objects. After
+binarization, they directly specify the learned lifted \strips model.
+
+Appendix~\ref{app:brap-program} describes the corresponding B-RASP program for the LS Transformer, which extends propositional formulation of~\citet{nunez2026strips}.
 
 \noindent
 \begin{minipage}[t]{0.53\textwidth}
@@ -16,22 +132,12 @@ can remove the need for final-state observations (no goal actions) -\> STRIPS Tr
 \hfill
 \begin{minipage}[t]{0.48\textwidth}
 \vspace{0pt}
-    The architecture ...
-    
-    The attention heads ...
-    
-    The learned parameters ...    The architecture ...
-    
-    The attention heads ...
-    
-    The learned parameters ...    The architecture ...
-    
-    The attention heads ...
-    
-    The learned parameters ...
+
 \end{minipage}
 
-can remove the need for negative examples (only positive actions + goal actions) -> SB Transformer   rosame (intermedio imágenes)
+
+
+\textbf{Carlos - comentar que applicability supervision sería aplicable al LB transformer también pero, como no podemos hacer symbolic alignment, no se podría extraer \strips model. Por tanto, en nuestros experimentos no usamos applicability supervision con LB.}
 
 \textbf{Carlos -- for the SB Transformer, we use a special separator token <sep> between actions. Labels are associated with the SEP token after each action, so the transformer uses that token to predict applicability for domain/goal actions.}
 
@@ -39,7 +145,5 @@ can remove the need for negative examples (only positive actions + goal actions)
 
 State prediction, SB transf, Randomized Obj Embeds
 
-Transformers can learn lifted symbolic world models from action traces that generalize simultaneously to longer horizons and to larger numbers of objects. Moreover, different forms of supervision can substitute for one another: with final-state observations, positive action traces suffice. With action-applicability supervision, final-state observations can sometimes be dispensed with altogether.
-
-
+\textbf{Carlos -- Hablar aquí de cómo se extrae el \strips model en cada supervision setting (applicability via alignment; final-state via state probing). Para más información, mirar Appendixes C y D y documento overleaf. Todos los planning experiments son con Mimir, con gbfs y FF heuristic (ver sección 8.3 KR paper). Max num of generated nodes is 10M per problem.}
 

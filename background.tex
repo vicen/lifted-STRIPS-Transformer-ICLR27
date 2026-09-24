@@ -1,7 +1,23 @@
 
 \subsection{\strips Models}
 
-A \strips model $M=\langle\mathcal{P},A\rangle$ consists of a finite set of predicates $\mathcal{P}$ and action schemas $A$~\citep{russell:book,ghallab:book,geffner:book}. Each predicate $p\in\mathcal{P}$ denotes a relation over objects with fixed arity $\operatorname{ar}(p)$. Each action schema $\alpha(x_1,\ldots,x_k)\in A$, with variables $x_1,\ldots,x_k$, specifies its preconditions $\mathrm{pre}(\alpha)$, add effects $\mathrm{add}(\alpha)$, and delete effects $\mathrm{del}(\alpha)$. We use untyped \strips, representing object types when needed by unary predicates. % such as $\mathrm{is\_car}(x)$.
+A \strips model $M=\langle\mathcal{P},A\rangle$ consists of a finite set of
+predicates $\mathcal{P}$ and action schemas
+$A$~\citep{russell:book,ghallab:book,geffner:book}. Each predicate
+$p\in\mathcal{P}$ denotes a relation over objects with fixed arity $\operatorname{ar}(p)$. Each action
+schema $\alpha(x_1,\ldots,x_k)\in A$, with variables $x_1,\ldots,x_k$,
+specifies its preconditions $\mathrm{pre}(\alpha)$, add effects
+$\mathrm{add}(\alpha)$, and delete effects $\mathrm{del}(\alpha)$ as
+predicate whose arguments
+are drawn from the action variables. We use untyped \strips, representing object types when needed by unary predicates.
+
+\emph{Action patterns}, introduced by \citet{sift}, provide an alternative
+representation of these predicate occurrences. For a predicate $p$ of arity
+$r$, an action pattern $\alpha[\rho]$, with
+$\rho=(\rho_1,\ldots,\rho_r)$, specifies how the arguments of $p$ bind to
+the variables of $\alpha$. For example, $\alpha[3,1]$ represents the
+occurrence $p(x_3,x_1)$ in $\alpha(x_1,x_2,x_3)$.
+
 
 A problem instance $P=\langle M,O_N,I,G\rangle$ specifies a model $M$, a finite object set $O_N={o_1,\ldots,o_N}$, an initial state $I$, and a goal $G$. Grounding variables with objects in $O_N$ yields ground atoms and ground actions $a=\alpha(o_1,\ldots,o_k),$ with corresponding grounded preconditions and effects. Both $I$ and $G$ are sets of ground atoms.
 
@@ -14,10 +30,29 @@ Since $M$ is lifted, its predicates and action schemas are independent of $O_N$,
 \subsection{Transformers and Attention}
 \label{sec:attention-background}
 
-A Transformer~\cite{transformers} maps a sequence of token representations $(h_0,\ldots,h_{n-1})$ into contextual representations using self-attention and position-wise transformations. In an attention head, each representation is projected into a query $Q(i)$, key $K(i)$, and value $V(i)$, with attention score $S(i,j)=Q(i)K(j)^\top.$ We use strict future masking, so position $i$ can attend only to positions $j<i$. Standard attention applies softmax to these scores and returns a weighted combination of the corresponding values.
+A Transformer~\cite{transformers} maps a sequence of token representations
+$(h_0,\ldots,h_{n-1})$ into contextual representations using self-attention
+and position-wise transformations. In an attention head, each representation
+is projected into a query $Q(i)$, key $K(i)$, and value $V(i)$, with attention
+score $S(i,j)=Q(i)K(j)^\top$. Throughout, we use strict future masking, so
+position $i$ can attend only to positions $j<i$. Standard attention applies
+softmax to these scores and returns a weighted combination of the
+corresponding values.
 
-In \emph{masked hard attention}, position $i$ instead selects a preceding position with maximal score, resolving ties in favor of the rightmost one. \brasp~\cite{yang2024masked} is a Boolean programming language that provides an equivalent abstract representation of masked hard-attention Transformers.
+In \emph{masked hard attention}, position $i$ instead selects a preceding
+position with maximal score, resolving ties in favor of the rightmost one.
+\brasp~\cite{yang2024masked} is a Boolean programming language that provides
+an equivalent abstract representation of masked hard-attention Transformers.
 
-\emph{Stick-breaking attention}~\cite{tan2025scaling} provides a differentiable relaxation of this rightmost-selection mechanism. For scores $S(i,j)\in[0,1]$, $j<i$, it computes
-$$ \widetilde S(i,j) = S(i,j) \prod_{k=j+1}^{i-1} \bigl(1-S(i,k)\bigr). $$
-When the scores are binary, only the rightmost preceding position with score $1$ receives nonzero weight, recovering masked hard attention.
+\emph{Stick-breaking attention}~\cite{tan2025scaling} provides a
+differentiable relaxation of this rightmost-selection mechanism. For scores
+$S(i,j)\in[0,1]$, $j<i$, it computes
+$$
+\widetilde S(i,j)
+=
+S(i,j)
+\prod_{k=j+1}^{i-1}
+\bigl(1-S(i,k)\bigr).
+$$
+For binary scores, only the rightmost position with score $1$ receives
+nonzero weight, recovering masked hard attention.
