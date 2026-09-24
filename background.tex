@@ -1,0 +1,23 @@
+
+\subsection{\strips Models}
+
+A \strips model $M=\langle\mathcal{P},A\rangle$ consists of a finite set of predicates $\mathcal{P}$ and action schemas $A$~\citep{russell:book,ghallab:book,geffner:book}. Each predicate $p\in\mathcal{P}$ denotes a relation over objects with fixed arity $\operatorname{ar}(p)$. Each action schema $\alpha(x_1,\ldots,x_k)\in A$, with variables $x_1,\ldots,x_k$, specifies its preconditions $\mathrm{pre}(\alpha)$, add effects $\mathrm{add}(\alpha)$, and delete effects $\mathrm{del}(\alpha)$. We use untyped \strips, representing object types when needed by unary predicates. % such as $\mathrm{is\_car}(x)$.
+
+A problem instance $P=\langle M,O_N,I,G\rangle$ specifies a model $M$, a finite object set $O_N={o_1,\ldots,o_N}$, an initial state $I$, and a goal $G$. Grounding variables with objects in $O_N$ yields ground atoms and ground actions $a=\alpha(o_1,\ldots,o_k),$ with corresponding grounded preconditions and effects. Both $I$ and $G$ are sets of ground atoms.
+
+A problem instance defines a deterministic state-transition model, which can be viewed as the dynamics of a deterministic MDP over Boolean state variables. A state $s$ represents a truth-valuation over the ground atoms represented by those which are true in $s$. A ground action $a$ is applicable in $s$ when $\mathrm{pre}(a)\subseteq s$, and maps it to $s'=(s\cup\mathrm{add}(a))\setminus\mathrm{del}(a).$
+
+An action trace $\tau=(a_0,\ldots,a_{n-1})$ is applicable from $s$ if each $a_i$ is applicable in the state reached from $s$ after executing $a_0,\ldots,a_{i-1}$. It is a plan for $P$ if it is applicable from $I$ and its resulting state contains $G$.
+
+Since $M$ is lifted, its predicates and action schemas are independent of $O_N$, so the same model can be instantiated over problem instances with different numbers of objects.
+
+\subsection{Transformers and Attention}
+\label{sec:attention-background}
+
+A Transformer~\cite{transformers} maps a sequence of token representations $(h_0,\ldots,h_{n-1})$ into contextual representations using self-attention and position-wise transformations. In an attention head, each representation is projected into a query $Q(i)$, key $K(i)$, and value $V(i)$, with attention score $S(i,j)=Q(i)K(j)^\top.$ We use strict future masking, so position $i$ can attend only to positions $j<i$. Standard attention applies softmax to these scores and returns a weighted combination of the corresponding values.
+
+In \emph{masked hard attention}, position $i$ instead selects a preceding position with maximal score, resolving ties in favor of the rightmost one. \brasp~\cite{yang2024masked} is a Boolean programming language that provides an equivalent abstract representation of masked hard-attention Transformers.
+
+\emph{Stick-breaking attention}~\cite{tan2025scaling} provides a differentiable relaxation of this rightmost-selection mechanism. For scores $S(i,j)\in[0,1]$, $j<i$, it computes
+$$ \widetilde S(i,j) = S(i,j) \prod_{k=j+1}^{i-1} \bigl(1-S(i,k)\bigr). $$
+When the scores are binary, only the rightmost preceding position with score $1$ receives nonzero weight, recovering masked hard attention.

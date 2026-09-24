@@ -1,0 +1,38 @@
+
+\noindent \textbf{Transformers and World Models}.
+Work on chess and Othello has examined whether transformers trained for next-token prediction track and internally represent the underlying board state using state-tracking, probing, and interventions~\citep{Toshniwal_Wiseman_Livescu_Gimpel_2022,li_iclr,nanda2023linear}.
+In maze-solving tasks, \citet{spies2025transformers} study internal representations of maze connectivity when the connectivity graph is provided
+as input. 
+Recent work has investigated whether causal structure can be recovered from transformer attention~\citep{rohekar2025a}.
+Beyond state representations, \citet{world-models2} ask whether generative models recover the underlying transition structure, while \citet{vafa2025what} study whether predictive models acquire inductive biases that transfer to new tasks.
+Another line learns symbolic world models for robot planning from perceptual observations, using neuro-symbolic abstractions and pretrained vision-language models
+\citep{liang2025visualpredicator,liang2026exopredicator,athalye2026pixels}.
+In contrast, we recover an explicit lifted \strips model rather than probe an implicit world model from symbolic traces without intermediate-state observations. In our applicability setting, no successor states are observed at all. We evaluate the resulting models through prediction and planning, including generalization to longer traces and larger object sets.
+
+
+\noindent \textbf{Formal Languages and Transformer Generalization}.
+To formally characterize computations performed by transformers, \citet{rasp} proposed a simple abstract programming language called RASP. \citet{yang2024masked} later developed a Boolean variant, B-RASP, and showed that masked hard-attention transformers characterize exactly the class of star-free languages. This connection is directly relevant to planning, since the set of valid action sequences in a \strips planning domain also forms a star-free language \citep{Lin_Bercher_2022}, implying that masked hard-attention transformers are expressive enough to recognize such sequences.
+
+More recently, the C-RASP framework, an extension of RASP with counting operations, was introduced to study length generalization in soft-attention transformers~\citep{yang2024counting,huang2025length}.
+Later, \citet{sarrof2026verify} extended this framework to C*-RASP to analyze plan verification in lifted \strips, where plan length and the number of objects increase at test time.
+In contrast, our goal is not plan verification itself, but learning the underlying lifted \strips model. We use plan verification as an intermediate step toward this goal, building on B-RASP rather than C-RASP.
+
+% -- Previous, I have removed the mention to well-formed domains
+%They show that soft-attention transformers can verify \strips plans, but only for well-formed domains.
+%By contrast, we show that B-RASP and, by extension, our proposed hard-attention transformers can recognize \strips without assuming that the domain is well-formed. %Moreover, we extract \strips models from the trained transformers.
+
+% Carlos - no me gusta este párrafo porque "without the additional counting machinery" parece que indica que C-RASP es más complejo que B-RASP, cuando simplemente son complementarios. Nuestro acercamiento tiene dos ventajas sobre \ref{sarrof2026verify}: (1) B-RASP/hard-attention transformers no están limitados a well-formed STRIPS; (2) nosotros no solo verificamos planes, sino que extraemos el STRIPS domain del transformer.
+%~\cite{sarrof2026verify} further extended this framework to C*-RASP to analyze plan verification when plan length and the number of objects increase at test time.
+% Our analysis remains within B-RASP. We show that B-RASP already suffices to recognize lifted STRIPS traces involving a finite number of objects without requiring the additional counting machinery of C-RASP.
+
+\noindent \textbf{Learning Action Models for Planning}.
+Learning action models from trajectories has a long history in AI planning, with methods using fully or partially observed state-action sequences \citep{zhuo2013action,aineto2019learning,lamanna2025lifted} and others recovering lifted rules from action sequences alone \citep{locm,sift}. Recent work studies how much information about states and actions can be removed while still identifying the underlying dynamics \citep{jansen2025incomplete,gosgens2026minimal}. Neural approaches have also been used to learn propositional or lifted action models \citep{asai:jair,xi2024neuro,xi2026unsupervised,ajith2026strips}. 
+% In contrast, we study action-model learning as a transformer sequence-learning problem and analyze how final-state observations and action-applicability labels provide alternative forms of supervision for recovering the underlying action model.
+Our work generalizes~\citet{nunez2026strips} to a lifted setting by learning lifted models from traces of different domain instances, and by learning from positive traces only labeled with the final states.
+%. Our traces are still grounded, but the learned action model is lifted and generalizes across object identities, including to problem instances with more objects and previously unseen ground actions. We also consider final-state prediction from positive traces alone, while \citet{nunez2026strips} requires negative actions for learning.
+% learns from positive and negative traces using action-applicability labels only.
+
+\noindent \textbf{Pre-trained LLMs and Symbolic Planning Models}.
+Recent work uses pre-trained LLMs to generate explicit symbolic models that can be used by classical planners. First approaches generate PDDL domain models from natural-language descriptions \citep{NEURIPS2023_f9f54762,oswald2024large}, while more recent work improves domain generation through test-time sampling and refinement \citep{yu2025symbolic}, or derives PDDL models from demonstrations and visual simulation \citep{huang2026onedemo,hao2026simulation}, or decomposes world modeling into action-applicability and state-transition prediction using separate LLMs \citep{xie-etal-2025-making}.
+In contrast, we learn lifted action models directly from symbolic traces, without relying on pre-trained semantic knowledge or external simulation.
+This is specially relevant since prior exposure to the corresponding domain dynamics or PDDL encodings cannot generally be ruled out in these approaches, whereas our models learn the dynamics solely from the traces provided.

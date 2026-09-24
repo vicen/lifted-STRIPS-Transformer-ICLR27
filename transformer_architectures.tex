@@ -1,0 +1,45 @@
+\label{sec:arch}
+
+\textbf{Carlos - comentar que applicability supervision sería aplicable al LB transformer también pero, como no podemos hacer symbolic alignment, no se podría extraer \strips model. Por tanto, en nuestros experimentos no usamos applicability supervision con LB.}
+
+can remove the need for final-state observations (no goal actions) -\> STRIPS Transformer
+(first method that does not require transitions PDDL) value (tambien conexion con B-RASP and alignment
+
+\noindent
+\begin{minipage}[t]{0.53\textwidth}
+\vspace{0pt}
+    \centering
+    \includegraphics[width=\linewidth]{LS_transformer.png}
+    \captionof{figure}{Architecture of the Lifted \strips Transformer.}
+    \label{fig:ls-transformer}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\vspace{0pt}
+    The architecture ...
+    
+    The attention heads ...
+    
+    The learned parameters ...    The architecture ...
+    
+    The attention heads ...
+    
+    The learned parameters ...    The architecture ...
+    
+    The attention heads ...
+    
+    The learned parameters ...
+\end{minipage}
+
+can remove the need for negative examples (only positive actions + goal actions) -> SB Transformer   rosame (intermedio imágenes)
+
+\textbf{Carlos -- for the SB Transformer, we use a special separator token <sep> between actions. Labels are associated with the SEP token after each action, so the transformer uses that token to predict applicability for domain/goal actions.}
+
+\textbf{Carlos -- The process for extracting the STRIPS model from the transformers is explained in the overleaf document, section 16.11. The method for applicability supervision is in Section 16.11.1, and for state supervision in 16.11.2.}
+
+State prediction, SB transf, Randomized Obj Embeds
+
+Transformers can learn lifted symbolic world models from action traces that generalize simultaneously to longer horizons and to larger numbers of objects. Moreover, different forms of supervision can substitute for one another: with final-state observations, positive action traces suffice. With action-applicability supervision, final-state observations can sometimes be dispensed with altogether.
+
+
+
