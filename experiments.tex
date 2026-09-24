@@ -1,0 +1,46 @@
+% >> TODO - add appendix with PDDL domains, generator params., transformer hyperparameters (num layers, batch size, lr, bce/goal-bce weight, focal coeff, dropout,), num predicates LS Transformer for each domain (GT conf.), <Explain how parameters \theta of LS Transformer preconds and effects are initialized! Also explain gumbel sigmoid temp> etc.
+% Also --weight-init-method z (how LS Transformer params are initialized)
+
+We evaluate the LS and LB Transformers on trace classification and planning. Our experiments address the following research questions:
+
+\begin{itemize}
+    \item[\textbf{RQ1:}] How do the LS and LB Transformers compare against standard transformer baselines?
+    \item[\textbf{RQ2:}] Does the additional symbolic structure of the LS Transformer lead to better performance than the LB Transformer? And do results depend on the supervision setting?
+    \item[\textbf{RQ3:}] Can we extract accurate and interpretable \strips models from the trained transformers that can be used for planning?
+    \item[\textbf{RQ4:}] Do the LS and LB Transformers generalize to longer traces and larger numbers of objects than those seen during training?
+\end{itemize}
+
+We explain our experimental setup below.
+
+\paragraph{Baselines.}
+We compare our proposed models against two standard baselines. In both, positional information is applied only to half of each token embedding, to partially separate positional information from the randomized object embeddings.
+
+\begin{itemize}
+    \item \textbf{Sinusoidal}: the original soft-attention transformer architecture proposed in \citep{transformers}, using softmax aggregation and sinusoidal positional encodings.
+    \item \textbf{RoPE}: a soft-attention transformer with softmax aggregation and Rotary Position Embeddings \citep{su2024roformer}, which have been shown to improve generalization on longer sequences \citep{spies2025transformers}.
+\end{itemize}
+
+\paragraph{Planning domains.}
+% If we need more space, we can remove the bullet point list and put every domain description in one paragraph
+We perform experiments on five planning domains widely used in the AP community \citep{long20033rd,fern2011first,taitler20242023}:
+
+\begin{itemize}
+    \item \textbf{\bw}: a set of blocks must be reassembled into a target configuration with a robotic gripper.
+    \item \textbf{\fr}: a ferry is used to transport cars between different ports.
+    \item \textbf{\lgt}: logistics task where a fleet of trucks and airplanes is used to deliver packages across locations in different cities.
+    \item \textbf{\np}: a puzzle where numbered tiles must be slid into their goal positions.
+    \item \textbf{\mz}: an agent must traverse a grid-based maze to reach a goal location.
+\end{itemize}
+
+\paragraph{Data generation.}
+For each domain, we generate 100 different training, test and planning problems, using randomized generators. Test and planning problems contain more objects in order to assess generalization.
+Training and test problems are used to generate random action traces, each containing a number of domain actions sampled uniformly from $[1,D]$. 
+We generate $10^5$ training traces with $D=50$, and $2\cdot10^5$ test traces with larger $D=200$ to evaluate generalization to longer traces.
+For applicability supervision, training traces contain applicable and inapplicable domain actions sampled with equal probability, while in test traces only the final domain action may be inapplicable. For final-state supervision, all domain actions are applicable. In both settings, traces contain their initial states, while final states are reserved for final-state supervision.
+
+\paragraph{Training and evaluation.}
+Both architectures are trained with RAdam \citep{liu2019variance}, using $10^5$ steps for the LS Transformer and $5\cdot10^5$ for the LB Transformer, increasing to $7.5\cdot10^5$ steps in \lgt for the latter.
+We perform validation every $10^4$ training steps, computing accuracy on the whole training dataset. After training, the checkpoint with the highest accuracy is tested. Accuracy is measured as the percentage of traces correctly classified, where a trace is considered correct only if the transformer correctly predicts the applicability label of each action in the trace. For the LS Transformer, predictions are obtained using the binarized parameters $\bar{\theta}$, whereas for the LB Transformer predictions are rounded to $\{0,1\}$.
+We extract \strips models from both architectures for planning, with the procedure corresponding to the supervision setting. Then, planning accuracy is computed as the percentage of planning problems correctly solved with the extracted model, i.e., those for which the planner outputs a valid plan.
+Finally, each experiment is conducted on a machine with an NVIDIA L40S GPU and an Intel Xeon Gold 6542Y CPU.
+% If we don't say it before, say that we use GBFS FF and pymimir for planning!
