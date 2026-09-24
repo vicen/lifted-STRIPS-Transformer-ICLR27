@@ -1,70 +1,22 @@
-% Things to mention
-\begin{itemize}
-    \item The applicability setting (learning without state transitions) may need symbolic inductive biases/world models for the system to learn
-    \item SB Transformer should be applicable to STRIPS+ actions (no arguments, etc.)
-\end{itemize}
+% > Maybe mention something of this:
+% Current approaches to world-model learning adopt widely different task formulations, largely determined by the supervision available in each trace. At one extreme, models are trained only on sequences of actions or moves, with the underlying state remaining latent~\cite{Toshniwal_Wiseman_Livescu_Gimpel_2022,li_iclr,nanda2023linear}. At the other, recent approaches learn from dense observation-action trajectories in which intermediate observations of the environment are available~\cite{liang2025visualpredicator,liang2026exopredicator,athalye2026pixels}. As a result, it remains unclear what information is actually required to recover dynamics that extrapolate systematically beyond the training distribution.
 
-We have ...
+% > General idea below
+% Related work shows that transformers trained on traces containing actions but no state observations can learn to track states and predict next actions~\cite{Toshniwal_Wiseman_Livescu_Gimpel_2022,li_iclr,nanda2023linear}. At the same time,~\{vafa2025what, world-models2} show that this does not necessarily imply the transformer has learned an accurate world model that generalizes to downstream tasks.
+% Our LS Transformer tackles this case, and we show that an explicit world model can be recovered, it can be used for planning, and it generalizes to longer traces and more objects.
+% We believe that the key to learning in this setting is to have a \textit{symbolic inductive bias}, as the one encoded in the LS Transformer.
 
-% vicenc maybe rephrase this here
-Current approaches to world-model learning adopt widely different task formulations, largely determined by the supervision available in each trace. At one extreme, models are trained only on sequences of actions or moves, with the underlying state remaining latent~\cite{Toshniwal_Wiseman_Livescu_Gimpel_2022,li_iclr,nanda2023linear}. At the other, recent approaches learn from dense observation-action trajectories in which intermediate observations of the environment are available~\cite{liang2025visualpredicator,liang2026exopredicator,athalye2026pixels}. As a result, it remains unclear what information is actually required to recover dynamics that extrapolate systematically beyond the training distribution.
-
-% ----
-
-% > Resumen contribución
-
-% > Resumen resultados
-% - Applicability setting is interested. Only tackled by symbolic systems. However, we main need symbolic inductive biases to learn in this setting.
-    % But there are other works that train transformers on next-token prediction and learn a "latent, implicit" world model
-
-% Other works have tried learning world models without state observations. But these world models are not directly accessible and are sometimes inaccurate (reference to Vafa). In contrast, we learn with applicability setting an accurate world model that is fully interpretable and can be used for planning.
-
-% ----
-% Some related work train transformers on actions + states.
-% Other works train them only on actions, with no states.
-% We show it is possible to learn a world model with transformers in both supervision settings.
-% The latter case (only actions, no states) is particular interesting. Related work shows that transformers trained on this supervision setting can learn to track states and predict next actions~\cite{Toshniwal_Wiseman_Livescu_Gimpel_2022,li_iclr,nanda2023linear}. At the same time,~\{vafa2025what, world-models2} show that this does not necessarily imply the transformer has learn an accurate world model that generalizes to downstream tasks.
-% Our LS Transformer tackles this latter case, and we show that an explicit world model can be recovered, it can be used for planning, and it generalizes to longer traces and more objects.
-
-
-% Conversely, our proposed LS Transformer is able to learn explicit, accurate world models in this setting.
-
-% Mention SIFT?
-% ----
-
-
-
-% > Future work
-% - Extension to STRIPS+ (example atari)
-% - Use of images (like Rosame, ver si está en related work)
-% - non-determinism?
-
-
-
-In this work, we addressed the question of whether transformers can learn lifted world models through next-token prediction.
-We used \strips as a language to encode interpretable, lifted world models, and proposed two transformer architectures.
-The LB Transformer builds on standard soft-attention transformers but substitutes softmax with stick-breaking attention and uses no positional encodings.
+In this work, we addressed whether transformers can learn lifted world models through next-token prediction.
+We used \strips as a language for interpretable, lifted world models, and proposed two transformer architectures.
+The LB Transformer builds on standard soft-attention transformers but replaces softmax with stick-breaking attention and uses no positional encodings.
 The LS Transformer incorporates additional symbolic structure, with parameters that map directly to preconditions and effects of \strips actions.
-We considered two supervision settings: \textit{final-state}, where each trace contains an initial state, a sequence of applicable actions and the resulting final state, and \textit{applicability}, where the final state is omitted but traces additionally contain inapplicable actions.
+We considered two supervision settings: \textit{final-state}, where each trace contains an initial state, a sequence of applicable actions, and the resulting final state; and \textit{applicability}, where the final state is omitted but traces additionally contain inapplicable actions.
 
-Experiment results show that the LS and LB Transformers learn successfully across all five domains considered,
+Experimental results show that the LS and LB Transformers learn successfully across all five domains,
 unlike baseline transformers with softmax attention and positional encodings.
-We conclude that the combination of stick-breaking attention and no positional encodings provides a strong inductive bias that aligns with \strips semantics, enabling learning and generalization.
-Additionally, our proposed transformers exhibit near-perfect generalization abilities when tested on traces with up to ten times more actions and objects.
-
-
-
-
-
-% Successfully learn across the five domains considered, unless baselines
-% Generalize to more objects and longer traces
-% Extract \strips world model that can be used for planning with off-the-shelf symbolic planners.
-% Such a model is fully interpretable, clearly show the dynamics learned and can "pin-point" mistakes in dynamics.
-
-% ---> Connect last point to related work!!
-
-% Then future work
-
-
-% To the best of our knowledge, first work to learn lifted world models with transformers
-% applicability supervision is specially interesting -> related work learns but no actual world model
+We conclude that combining stick-breaking attention with no positional encodings provides a strong inductive bias that aligns with \strips semantics, enabling both learning and generalization.
+As a result, our transformers achieve near-perfect generalization to traces containing up to ten times more actions and objects than those seen during training.
+Additionally, we extract accurate \strips models from the trained transformers and use them directly for planning with off-the-shelf symbolic planners.
+Extracted models are lifted and fully interpretable, so we can inspect the learned dynamics and identify precise errors when they occur.
+In future work, we plan to explore several extensions, including learning \texttt{STRIPS+} models \citep{jansen2025incomplete} where actions contain fewer arguments, learning from states represented as images \citep{xi2024neuro,xi2026unsupervised}, and learning stochastic world models.
+We hope this will broaden the applicability of our approach to settings such as Atari games and robotics.

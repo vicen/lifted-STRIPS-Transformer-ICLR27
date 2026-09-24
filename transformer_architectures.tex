@@ -34,13 +34,13 @@ binary values; their parameterization is detailed in
 Appendix~\ref{app:strips-transformer}.
 
 The head for predicate $p$ compares an occurrence of $p$ in the current action
-$a_i=\alpha_i(\mathbf{o}_i)$ with an occurrence in another action
+$a_i=\alpha_i(\mathbf{o}_i)$ with an occurrence in a preceding action
 $a_j=\alpha_j(\mathbf{o}_j)$. Let $\rho$ be the action pattern specifying the
 occurrence of $p$ in $a_i$, and $\sigma$ the pattern specifying its occurrence
 in $a_j$. We write
 $\mathbf{o}_i^\rho=(o_{i,\rho_1},\ldots,o_{i,\rho_r})$
 for the object arguments selected by $\rho$. The head computes
-\begin{align}
+\begin{align}\label{eq:scores}
 S_{p,\rho,\sigma}(i,j)
 &=
 q_{p,\alpha_i,\rho}\,
@@ -49,68 +49,23 @@ k_{p,\alpha_j,\sigma}\,
 \mathbf{o}_i^\rho=\mathbf{o}_j^\sigma
 \right].
 \end{align}
-The $q$ term indicates whether the occurrence in $a_i$ is a precondition,
-the $k$ term whether the occurrence in $a_j$ is an effect, and the indicator
-ensures that both refer to the same ground instance of $p$. The equality test
-is implemented exactly using one-hot object representations and structured
-query and key projections, as detailed in
+The $q$ term indicates whether the occurrence in $a_i$ is a precondition, the $k$ term whether the occurrence in $a_j$ is an effect, and the indicator ensures that both refer to the same ground instance of $p$. The equality test is implemented using one-hot object representations and structured query and key projections, as detailed in Appendix~\ref{app:strips-transformer}.
+
+We then apply stick-breaking attention to the scores of~Eq.~\ref{eq:scores}. For binary scores, it selects the most recent effect on the same ground instance of $p$, while $v$ indicates whether this effect deletes $p$. The resulting output $Y_{p,\rho}(i)$ is therefore $1$ exactly when the corresponding precondition is false.
+
+The precondition outputs are combined as a continuous OR,
+\begin{align}
+Y(i)
+&=
+1-\prod_{p\in\mathcal{P}}\prod_{\rho}
+\left(1-Y_{p,\rho}(i)\right).
+\end{align}
+For binary outputs, $Y(i)=1$ exactly when at least one precondition is false,
+and hence when $a_i$ is inapplicable.
+The full attention computation is given in
 Appendix~\ref{app:strips-transformer}.
 
-Strict future masking sets these scores to zero for $j\geq i$. We then use
-stick-breaking attention~\citep{tan2025scaling}. Let
-$$
-\bar S_{p,\rho}(i,j)
-=
-\sum_\sigma S_{p,\rho,\sigma}(i,j).
-$$
-The resulting weight of an effect pattern $\sigma$ at position $j$ is
-$$
-\widetilde S_{p,\rho,\sigma}(i,j)
-=
-S_{p,\rho,\sigma}(i,j)
-\prod_{k=j+1}^{i-1}
-\left(1-\bar S_{p,\rho}(i,k)\right).
-$$
-For binary parameters, this selects the rightmost preceding action that
-affects the ground predicate instance represented by $(p,\rho)$. Note that no explicit
-maximum or positional encoding is required.
-
-The output associated with this precondition is
-$$
-Y_{p,\rho}(i)
-=
-\sum_{j<i}\sum_\sigma
-\widetilde S_{p,\rho,\sigma}(i,j)
-v_{p,\alpha_j,\sigma}.
-$$
-Since $v$ distinguishes delete from add effects, $Y_{p,\rho}(i)=1$ for
-binary parameters exactly when the most recent matching effect makes this
-precondition false. The outputs are combined over all possible
-preconditions using a continuous OR,
-$$
-Y_\theta(i)
-=
-1-
-\prod_{p\in\mathcal{P}}
-\prod_{\rho}
-\left(1-Y_{p,\rho}(i)\right).
-$$
-Thus, $Y_\theta(i)\in[0,1]$ represents the degree to which action $a_i$ is
-inapplicable. With $\theta=\theta_M$, this computation agrees exactly with
-the applicability induced by $M$.
-
-Initial states are incorporated into the same computation using setup
-actions with fixed parameters. The action $\texttt{init-start}$ initializes
-all ground predicate instances to false, and each
-$\texttt{init-}p(\mathbf{o})$ action sets $p(\mathbf{o})$ to true.
-For final-state supervision, a setup action
-$\texttt{test-}p(\mathbf{o})$ has $p(\mathbf{o})$ as its only precondition
-and no effects. Its applicability after a trace therefore corresponds to
-the truth value of $p(\mathbf{o})$ in the resulting state. Under
-applicability supervision, $Y_\theta(i)$ is supervised directly on the
-domain actions; under final-state supervision, all domain actions are
-applicable and the final-state labels supervise the corresponding
-$\texttt{test-}p$ actions. 
+The same computation can incorporate state information by encoding it as auxiliary actions with fixed parameters. Before the domain trace, the action $\texttt{init-start}$ sets all ground predicate instances to false, and $\texttt{init-}p(\mathbf{o})$ actions set those in the initial state to true. For final-state supervision, $\texttt{test-}p(\mathbf{o})$ is appended after the trace, with $p(\mathbf{o})$ as its only precondition and no effects. Its predicted applicability therefore indicates whether $p(\mathbf{o})$ holds in the resulting state.
 
 Finally, the learned parameters are indexed by predicates, action schemas,
 and action patterns, but not by object identities or by the number $N$ of
