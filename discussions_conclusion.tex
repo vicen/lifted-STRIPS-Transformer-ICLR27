@@ -1,0 +1,11 @@
+% Things to mention
+\begin{itemize}
+    \item The applicability setting (learning without state transitions) may need symbolic inductive biases/world models for the system to learn
+    \item SB Transformer should be applicable to STRIPS+ actions (no arguments, etc.)
+\end{itemize}
+
+We have ...
+
+% vicenc maybe rephrase this here
+Current approaches to world-model learning adopt widely different task formulations, largely determined by the supervision available in each trace. At one extreme, models are trained only on sequences of actions or moves, with the underlying state remaining latent~\cite{Toshniwal_Wiseman_Livescu_Gimpel_2022,li_iclr,nanda2023linear}. At the other, recent approaches learn from dense observation-action trajectories in which intermediate observations of the environment are available~\cite{liang2025visualpredicator,liang2026exopredicator,athalye2026pixels}. As a result, it remains unclear what information is actually required to recover dynamics that extrapolate systematically beyond the training distribution.
+
