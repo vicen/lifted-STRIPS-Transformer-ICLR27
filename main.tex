@@ -77,6 +77,7 @@
 \newcommand{\strips}{\textsc{strips}\xspace}
 \newcommand{\brasp}{\textsc{B-RASP}\xspace}
 
+\newcommand{\hector}[1]{\textcolor{red}{#1}}
 \newcommand{\Omit}[1]{}
 
 
@@ -129,9 +130,10 @@ To this end, we leverage \strips, a logic-based formalism for specifying lifted,
 We propose two transformer architectures for learning \strips models:
 the Lifted \strips (LS) Transformer, with built-in symbolic structure and parameters that map directly to \strips;
 and the Lifted Stick-Breaking (LB) Transformer, a standard transformer that replaces softmax with stick-breaking attention and uses randomized object embeddings.
-The transformers are trained in a supervised manner on action traces, under two supervision settings. In one, action sequences are labeled as applicable or not, in a given initial state. In the other, applicable action sequences in a given state are paired with the resulting final state.
+The transformers are trained in a supervised manner on action traces under two supervision settings.
+In one, action sequences are labeled as applicable or not, in a given initial state. In the other, applicable action sequences in a given state are paired  with the resulting final state.
 Experiments on five benchmark domains show that both transformers achieve high accuracy and generalize to longer traces and larger numbers of objects.
-Additionally, the \strips models extracted from the transformers are fully interpretable and are used for planning with off-the-shelf symbolic planners.
+Additionally, the \strips models extracted from the transformers,  which  are fully interpretable,  are evaluated for planning with off-the-shelf symbolic planners in the five domains.
 \end{abstract}
 
 \section{Introduction}

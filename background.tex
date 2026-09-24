@@ -1,7 +1,7 @@
 
 \subsection{\strips Models}
 
-A \strips model $M=\langle\mathcal{P},A\rangle$ consists of a finite set of
+A \strips model or domain  $M=\langle\mathcal{P},A\rangle$ consists of a finite set of
 predicates $\mathcal{P}$ and action schemas
 $A$~\citep{russell:book,ghallab:book,geffner:book}. Each predicate
 $p\in\mathcal{P}$ denotes a relation over objects with fixed arity $\operatorname{ar}(p)$. Each action
@@ -16,16 +16,17 @@ representation of these predicate occurrences. For a predicate $p$ of arity
 $r$, an action pattern $\alpha[\rho]$, with
 $\rho=(\rho_1,\ldots,\rho_r)$, specifies how the arguments of $p$ bind to
 the variables of $\alpha$. For example, $\alpha[3,1]$ represents the
-occurrence $p(x_3,x_1)$ in $\alpha(x_1,x_2,x_3)$.
+occurrence $p(x_3,x_1)$ in $\alpha(x_1,x_2,x_3)$. \hector{This paragraph should go; why do we need this? It'd be confusing to readers}.
 
-
-A problem instance $P=\langle M,O_N,I,G\rangle$ specifies a model $M$, a finite object set $O_N={o_1,\ldots,o_N}$, an initial state $I$, and a goal $G$. Grounding variables with objects in $O_N$ yields ground atoms and ground actions $a=\alpha(o_1,\ldots,o_k),$ with corresponding grounded preconditions and effects. Both $I$ and $G$ are sets of ground atoms.
+A problem instance $P=\langle M,O_N,I,G\rangle$ specifies a model $M$, a finite object set $O_N={o_1,\ldots,o_N}$, an initial state $I$, and a goal $G$.
+Grounding variables with objects in $O_N$ yields ground atoms and ground actions $a=\alpha(o_1,\ldots,o_k),$ with corresponding grounded preconditions and effects. Both $I$ and $G$ are sets of ground atoms. \hector{Don't use $O_N$; use just $O$}
 
 A problem instance defines a deterministic state-transition model, which can be viewed as the dynamics of a deterministic MDP over Boolean state variables. A state $s$ represents a truth-valuation over the ground atoms represented by those which are true in $s$. A ground action $a$ is applicable in $s$ when $\mathrm{pre}(a)\subseteq s$, and maps it to $s'=(s\cup\mathrm{add}(a))\setminus\mathrm{del}(a).$
 
 An action trace $\tau=(a_0,\ldots,a_{n-1})$ is applicable from $s$ if each $a_i$ is applicable in the state reached from $s$ after executing $a_0,\ldots,a_{i-1}$. It is a plan for $P$ if it is applicable from $I$ and its resulting state contains $G$.
 
-Since $M$ is lifted, its predicates and action schemas are independent of $O_N$, so the same model can be instantiated over problem instances with different numbers of objects.
+Since the model $M$ is lifted, it can be used to defined model instances with different sets of objects, of any size.
+% its predicates and action schemas are independent of $O_N$, so the same model can be instantiated over problem instances with different numbers of objects.
 
 \subsection{Transformers and Attention}
 \label{sec:attention-background}
