@@ -442,7 +442,7 @@ finite, but arbitrarily large $N$, rather than a single B-RASP program
 over an unbounded object alphabet.
 
 \section{Extended Description of LS Transformer}
-\label{app:strips-transformer}
+\label{app:ls-transformer-extended}
 
 Here we present an extended description of Section \ref{sec:ls-transformer} in the main paper, detailing the architecture of the LS Transformer.
 The LS Transformer can be viewed as the neural realization of the B-RASP program in Section~\ref{app:brap-program}. Every set of parameter values $\theta$ encodes a continuous approximation of a (lifted) \strips model, with a one-to-one correspondence between binarized parameters $\bar{\theta}$ and \strips models $M$.
@@ -1044,26 +1044,6 @@ The parameters $\theta$ of the LS Transformer depend only on the number of hidde
 The value of $N$ only affects action embeddings and how transformer parameters are instantiated on the projection matrices in Eqs.~\ref{eq:strips-query-projection}, \ref{eq:strips-key-projection}, and \ref{eq:strips-value-projection}.
 This means that the same set of parameters $\theta$ can be instantiated on traces containing a larger number $N'>N$ of objects.
 As a result, the LS Transformer learns lifted operations that generalize to any number $N'$ of objects.
-
-
-\section{Description of the Stick-Breaking Transformer}
-
-For this section, just adapt Section 16.4 (Lifted LB Transformer) of the Overleaf notes (Lifted Action Model Learning with Transformers - Research Notes).
-
-Some additional points below:
-
-\begin{itemize}
-    \item Unlike the LS Transformer, the LB Transformer is not a ``direct implementation'' of the B-RASP program of Appendix B. The aim of the LB Transformer is to be as close as possible as a standard transformer, but be able to perform lifted \strips recognition. There are two key ideas for this, one relating to \textbf{length generalization}, the other relating to \textbf{object generalization}. 
-    \textbf{1)} We use stick-breaking attention and no positional encodings (NoPE), instead of softmax aggregation and positional encodings. This encodes a recency bias that aligns with the semantics of \strips, i.e., \textit{the truth value of an atom $p$ at position $i$ in the trace is given by the most recent, previous action $j$ ($j<i$) that affects it, regardless of the distance between $i$ and $j$.} Thus, by using stick-breaking attn. + NoPE, we encourage the tranformer to learn \strips semantics in a way that generalizes to longer traces.
-    \textbf{2)} We use non-learnable, randomized embeddings for tokens encoding objects. This encodes the lifted nature of (lifted) \strips, i.e., the use of first-order variables $x,y,...$. By using these randomized embeddings, we force the transformer to be invariant to object permutations/renamings and to learn \textit{lifted equality}, i.e., $x==y$ regardless of the particular objects the $x,y$ variables are instantiated on. Thus, with this design decision, we encourage the transformer to learn \strips semantics in a way that generalizes to more objects. Also, object embeddings are randomized each time the trace is sampled. This means that the same trace will get different randomized object embeddings in different training iterations (i.e., object embeddings are not fixed). Additionally, we ensure that there are no collisions, i.e., if $x\neq y$, then we ensure they do not receive the same embedding.
-
-    \item In theory, and assuming the LB Transformer has learned the optimal parameters $\theta^*$ that encode the ground-truth domain, it should generalize to any number of objects $N'$ larger than the set of objects $N$ seen during training. In practice, however, $N'$ is bounded by the size of the embedding vectors. If we use size $d$, e.g., 256, then embeddings can only represent up to $2^{d=256}$ different object IDs, so $N'=2^{256}$ in this case.
-
-    \item In the LB Transformer, stick-breaking attention is applied normally to all tokens. However, strict future masking depends on the token type. First, we apply it normally, i.e., each token can only attend to previous tokens in the trace. Then, additionally, tokens of init actions cannot attend to other init actions. Analogously, goal action tokens cannot attend to other goal actions. This encodes the fact that init actions are sets (order should not matter) and goal actions are queries independent from each other (also sets, so order should not matter either). We also tried to encode the fact that init/goal actions are order-insensitive in the stick-breaking attention operation (e.g., by not applying stick-breaking attention to init action tokens, and using softmax instead). However, empirical results were worse. Thus, we have resorted to simply modifying future masking (see above) and shuffling the init actions (although $init-start$ always appears as the first init action) and the goal actions in the trace.
-
-    \item As in the propositional transformer, both the lifted SB and LS Transformer cannot attend to previously inapplicable actions in the trace (only relevant for the applicability setting). The idea is that inapplicable actions do not change the state, so they are masked. For the lifted LB Transformer, all the tokens of that inapplicable actions (action schema, object and separator tokens) are masked.
-\end{itemize}
-
 
 \section{Extended Generalization Results}
 \label{app:gen}

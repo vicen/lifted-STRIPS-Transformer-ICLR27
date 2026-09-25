@@ -1,0 +1,95 @@
+The Lifted \strips (LS) Transformer follows the same conceptual design
+as the \strips Transformer of~\citet{nunez2026strips}, but extends it
+from propositional to lifted action models.
+
+Consider a \strips model $M=\langle\mathcal{P},A\rangle$. The applicability
+of an action $a_i$ depends on the truth of its preconditions, each determined
+by the most recent preceding action that affects the corresponding ground
+atom. Masked hard attention implements this recency-based dependency by
+retrieving the rightmost such action. Queries identify preconditions of the
+current action, keys identify effects of preceding actions on the same atom,
+and values indicate whether these effects make the atom true or false.
+This is the core idea behind the \strips Transformer. In the lifted setting,
+identifying the same ground atom additionally requires matching both its
+predicate $p$ and object arguments $\mathbf{o}$.
+
+The LS Transformer consists of a single self-attention block with one head
+for each predicate $p$, which tracks the truth values of its ground
+atoms along the trace. To distinguish these atoms, the architecture encodes the 
+possible occurrences of each predicate within an action schema through
+\emph{action patterns}. For a predicate $p$ of arity $r$, an action pattern 
+$\alpha[\rho]$, with $\rho=(\rho_1,\ldots,\rho_r)$, specifies how the arguments 
+of $p$ bind to the variables of $\alpha$. For example, $\alpha[3,1]$ represents 
+the occurrence $p(x_3,x_1)$ in $\alpha(x_1,x_2,x_3)$.
+
+For each predicate $p\in\mathcal{P}$, action schema $\alpha\in A$, and valid
+action pattern $\alpha[\rho]$, the LS Transformer has three scalar values
+$q_{p,\alpha,\rho}$, $k_{p,\alpha,\rho}$, and $v_{p,\alpha,\rho}$ in
+$[0,1]$, used in its query, key, and value computations. Their binary
+values for a \strips model $M$ are
+\begin{align}
+q_M(p,\alpha,\rho)
+&=
+\mathbb{I}\!\left[
+p(x_{\rho_1},\ldots,x_{\rho_r})\in\mathrm{pre}(\alpha)
+\right],\\
+k_M(p,\alpha,\rho)
+&=
+\mathbb{I}\!\left[
+p(x_{\rho_1},\ldots,x_{\rho_r})
+\in\mathrm{add}(\alpha)\cup\mathrm{del}(\alpha)
+\right],\\
+v_M(p,\alpha,\rho)
+&=
+\mathbb{I}\!\left[
+p(x_{\rho_1},\ldots,x_{\rho_r})\in\mathrm{del}(\alpha)
+\right].
+\end{align}
+Thus, $q_M$ indicates whether the predicate occurrence is a precondition,
+$k_M$ whether it is an effect, and $v_M$ whether that effect is a delete
+effect. During learning, $q$, $k$, and $v$ are differentiable relaxations
+of these binary values; their parameterization is detailed in
+Appendix~\ref{app:strips-transformer}.
+
+The head for predicate $p$ compares an occurrence of $p$ in the current action
+$a_i=\alpha_i(\mathbf{o}_i)$ with an occurrence in a preceding action
+$a_j=\alpha_j(\mathbf{o}_j)$. Let $\rho$ be the action pattern specifying the
+occurrence of $p$ in $a_i$, and $\sigma$ the pattern specifying its occurrence
+in $a_j$. We write
+$\mathbf{o}_i^\rho=(o_{i,\rho_1},\ldots,o_{i,\rho_r})$
+for the object arguments selected by $\rho$. The head computes
+\begin{align}\label{eq:scores}
+S_{p,\rho,\sigma}(i,j)
+&=
+q_{p,\alpha_i,\rho}\,
+k_{p,\alpha_j,\sigma}\,
+\mathbb{I}\!\left[
+\mathbf{o}_i^\rho=\mathbf{o}_j^\sigma
+\right].
+\end{align}
+The $q$ term indicates whether the occurrence in $a_i$ is a precondition, the $k$ term whether the occurrence in $a_j$ is an effect, and the indicator ensures that both refer to the same ground instance of $p$. The equality test is implemented using one-hot object representations and structured query and key projections, as detailed in Appendix~\ref{app:strips-transformer}.
+
+We then apply stick-breaking attention to these scores. For binary scores, it selects the most recent effect on the same ground instance of $p$, while $v$ indicates whether this effect deletes $p$. The resulting output $Y_{p,\rho}(i)$ is therefore $1$ exactly when the corresponding precondition is false.
+
+The precondition outputs are combined as a continuous OR,
+\begin{align}
+Y(i)
+&=
+1-\prod_{p\in\mathcal{P}}\prod_{\rho}
+\left(1-Y_{p,\rho}(i)\right).
+\end{align}
+For binary outputs, $Y(i)=1$ exactly when at least one precondition is false,
+and hence when $a_i$ is inapplicable.
+The full attention computation is given in
+Appendix~\ref{app:strips-transformer}.
+
+The same computation can incorporate state information by encoding it as auxiliary actions with fixed parameters. Before the domain trace, the action $\texttt{init-start}$ sets all ground predicate instances to false, and $\texttt{init-}p(\mathbf{o})$ actions set those in the initial state to true. For final-state supervision, $\texttt{test-}p(\mathbf{o})$ is appended after the trace, with $p(\mathbf{o})$ as its only precondition and no effects. Its predicted applicability therefore indicates whether $p(\mathbf{o})$ holds in the resulting state.
+
+Finally, the learned parameters are indexed by predicates, action schemas,
+and action patterns, but not by object identities or by the number $N$ of
+objects. Changing $N$ only changes the fixed object representations used to
+implement the equality test above. The same parameters can therefore be
+instantiated on problems with a different number of objects. After
+binarization, they directly specify the learned lifted \strips model.
+
+Appendix~\ref{app:brap-program} describes the corresponding B-RASP program for the LS Transformer, which extends propositional formulation of~\citet{nunez2026strips}.

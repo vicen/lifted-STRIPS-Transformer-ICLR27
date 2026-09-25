@@ -1,63 +1,21 @@
-The Lifted \strips (LS) Transformer follows the same conceptual design
-as the \strips Transformer of~\citet{nunez2026strips}, but extends it
-from propositional to lifted action models.
+\subsection{Lifted \strips (LS) Transformer}
+\label{sec:ls-transformer}
 
-Consider a \strips model $M=\langle\mathcal{P},A\rangle$. The applicability
-of an action $a_i$ depends on the truth of its preconditions, each determined
-by the most recent preceding action that affects the corresponding ground
-atom. Masked hard attention implements this recency-based dependency by
-retrieving the rightmost such action. Queries identify preconditions of the
-current action, keys identify effects of preceding actions on the same atom,
-and values indicate whether these effects make the atom true or false.
-This is the core idea behind the \strips Transformer. In the lifted setting,
-identifying the same ground atom additionally requires matching both its
-predicate $p$ and object arguments $\mathbf{o}$.
+Consider an action trace $\tau=(a_1,\ldots,a_n)$ over a \strips{} model $M=\langle\mathcal{P},A\rangle$. To determine whether an action $a_i$ is applicable, we check whether all its ground preconditions hold. For each precondition $p(\mathbf{o})$, its truth value is determined by the most recent preceding action $a_j$, with $j<i$, that affects it: an add effect makes it true, while a delete effect makes it false. The LS Transformer implements this computation directly through self-attention, generalizing the \strips transformer of \citet{nunez2026strips} to the lifted \strips setting. The architecture is based on the B-RASP program in Appendix~\ref{app:brap-program} and is described in detail in Appendix~\ref{app:ls-transformer-extended}.
 
-The LS Transformer consists of a single self-attention block with one head
-for each predicate $p$, which tracks the truth values of its ground
-atoms along the trace. To distinguish these atoms, the architecture encodes the 
-possible occurrences of each predicate within an action schema through
-\emph{action patterns}. For a predicate $p$ of arity $r$, an action pattern 
-$\alpha[\rho]$, with $\rho=(\rho_1,\ldots,\rho_r)$, specifies how the arguments 
-of $p$ bind to the variables of $\alpha$. For example, $\alpha[3,1]$ represents 
-the occurrence $p(x_3,x_1)$ in $\alpha(x_1,x_2,x_3)$.
+The LS Transformer consists of a single self-attention layer with one head per hidden predicate $p\in\mathcal{P'}$. The predicate set $\mathcal{P'}$ and its arities are hyperparameters and may differ from the set $\mathcal{P}$ of predicates in the ground-truth domain. Each head checks the preconditions involving its predicate.
 
-For each predicate $p\in\mathcal{P}$, action schema $\alpha\in A$, and valid
-action pattern $\alpha[\rho]$, the LS Transformer has three scalar values
-$q_{p,\alpha,\rho}$, $k_{p,\alpha,\rho}$, and $v_{p,\alpha,\rho}$ in
-$[0,1]$, used in its query, key, and value computations. Their binary
-values for a \strips model $M$ are
-\begin{align}
-q_M(p,\alpha,\rho)
-&=
-\mathbb{I}\!\left[
-p(x_{\rho_1},\ldots,x_{\rho_r})\in\mathrm{pre}(\alpha)
-\right],\\
-k_M(p,\alpha,\rho)
-&=
-\mathbb{I}\!\left[
-p(x_{\rho_1},\ldots,x_{\rho_r})
-\in\mathrm{add}(\alpha)\cup\mathrm{del}(\alpha)
-\right],\\
-v_M(p,\alpha,\rho)
-&=
-\mathbb{I}\!\left[
-p(x_{\rho_1},\ldots,x_{\rho_r})\in\mathrm{del}(\alpha)
-\right].
-\end{align}
-Thus, $q_M$ indicates whether the predicate occurrence is a precondition,
-$k_M$ whether it is an effect, and $v_M$ whether that effect is a delete
-effect. During learning, $q$, $k$, and $v$ are differentiable relaxations
-of these binary values; their parameterization is detailed in
-Appendix~\ref{app:strips-transformer}.
+For each predicate $p\in\mathcal{P'}$, action schema $\alpha\in A$, and valid pattern $\rho$, the parameters $\theta$ contain three scalars
+$\theta^{\mathrm{pre}}_{p,\alpha,\rho}$,
+$\theta^{\mathrm{eff}}_{p,\alpha,\rho}$, and
+$\theta^{\mathrm{del}}_{p,\alpha,\rho}$.
+These are mapped to relaxed values
+$q_{p,\alpha,\rho},k_{p,\alpha,\rho},v_{p,\alpha,\rho}\in[0,1]$,
+encoding whether the lifted atom $p(x_{\rho_1},\ldots,x_{\rho_r})$ is a precondition, an effect, and a delete rather than an add effect, respectively. These relaxations enable end-to-end differentiable learning and are binarized for inference. For binary values, $q=1$ specifies a precondition, while $k=1$ specifies an effect whose sign is determined by $v$: $v=0$ denotes an add effect and $v=1$ a delete effect.
 
-The head for predicate $p$ compares an occurrence of $p$ in the current action
-$a_i=\alpha_i(\mathbf{o}_i)$ with an occurrence in a preceding action
-$a_j=\alpha_j(\mathbf{o}_j)$. Let $\rho$ be the action pattern specifying the
-occurrence of $p$ in $a_i$, and $\sigma$ the pattern specifying its occurrence
-in $a_j$. We write
-$\mathbf{o}_i^\rho=(o_{i,\rho_1},\ldots,o_{i,\rho_r})$
-for the object arguments selected by $\rho$. The head computes
+The LS Transformer also encodes the auxiliary actions introduced in Section~\ref{sec:learning-task}. For a predicate $p$ of arity $r$, $\texttt{init-}p$ has no preconditions and $p(x_1,\ldots,x_r)$ as its single add effect, while $\texttt{goal-}p$ has no effects and the same atom as its single precondition. Both occurrences use the identity pattern $\rho=(1,\ldots,r)$. The special \texttt{init-start} action is encoded as setting every ground atom to false.
+
+Each ground action $a_i=\alpha_i(\mathbf{o}_i)$ is represented by a fixed binary embedding containing one-hot encodings of its schema and object arguments. Linear projections constructed from $\theta$ produce queries, keys, and values, with the queries and keys yielding the self-attention scores
 \begin{align}\label{eq:scores}
 S_{p,\rho,\sigma}(i,j)
 &=
@@ -65,61 +23,53 @@ q_{p,\alpha_i,\rho}\,
 k_{p,\alpha_j,\sigma}\,
 \mathbb{I}\!\left[
 \mathbf{o}_i^\rho=\mathbf{o}_j^\sigma
-\right].
+\right],
 \end{align}
-The $q$ term indicates whether the occurrence in $a_i$ is a precondition, the $k$ term whether the occurrence in $a_j$ is an effect, and the indicator ensures that both refer to the same ground instance of $p$. The equality test is implemented using one-hot object representations and structured query and key projections, as detailed in Appendix~\ref{app:strips-transformer}.
+where $\mathbf{o}_i^\rho$ denotes the object tuple selected by $\rho$ from $\mathbf{o}_i$. For binary parameters, this score is $1$ iff $q_{p,\alpha_i,\rho}=1$, so $\alpha_i$ has the precondition specified by $(p,\rho)$; $k_{p,\alpha_j,\sigma}=1$, so $\alpha_j$ has the effect specified by $(p,\sigma)$; and $\mathbf{o}_i^\rho=\mathbf{o}_j^\sigma$, so the precondition and effect refer to the same ground atom.
 
-We then apply stick-breaking attention to these scores. For binary scores, it selects the most recent effect on the same ground instance of $p$, while $v$ indicates whether this effect deletes $p$. The resulting output $Y_{p,\rho}(i)$ is therefore $1$ exactly when the corresponding precondition is false.
+Strict future masking restricts attention to $j<i$.
+Then, stick-breaking normalization is applied separately for each precondition pattern $\rho$. With binary parameters, it selects the most recent preceding effect on the corresponding ground precondition $p(o_i^\rho)$. This encodes an inductive bias aligned with \strips semantics.
 
-The precondition outputs are combined as a continuous OR,
-\begin{align}
-Y(i)
-&=
-1-\prod_{p\in\mathcal{P}}\prod_{\rho}
-\left(1-Y_{p,\rho}(i)\right).
-\end{align}
-For binary outputs, $Y(i)=1$ exactly when at least one precondition is false,
-and hence when $a_i$ is inapplicable.
-The full attention computation is given in
-Appendix~\ref{app:strips-transformer}.
+The normalized attention scores are combined with the values $v_{p,\alpha_j,\sigma}$ to obtain $Y_{p,\rho}(i)$. For binary parameters, $Y_{p,\rho}(i)$ is $0$ when the ground precondition $p(\mathbf{o}_i^\rho)$ is true (i.e., satisfied) and $1$ otherwise.
+Next, we perform aggregation with a continuous OR operation, to determine action applicability:
+\[
+Y_\theta(i)
+=
+1-\prod_{p\in\mathcal{P'}}\prod_{\rho}
+\bigl(1-Y_{p,\rho}(i)\bigr).
+\]
+$Y_\theta(i)=1$ iff one or more preconditions are false. Therefore, $a_i$ is applicable iff $Y_\theta(i)=0$.
 
-The same computation can incorporate state information by encoding it as auxiliary actions with fixed parameters. Before the domain trace, the action $\texttt{init-start}$ sets all ground predicate instances to false, and $\texttt{init-}p(\mathbf{o})$ actions set those in the initial state to true. For final-state supervision, $\texttt{test-}p(\mathbf{o})$ is appended after the trace, with $p(\mathbf{o})$ as its only precondition and no effects. Its predicted applicability therefore indicates whether $p(\mathbf{o})$ holds in the resulting state.
+Finally, we note that the transformer parameters $\theta$ are lifted: they depend on the hidden predicates $\mathcal{P}'$ and action schemas $A$, but not on the objects $O$ appearing in the traces. The same parameters can therefore be instantiated on traces with more objects than those seen during training.
 
-Finally, the learned parameters are indexed by predicates, action schemas,
-and action patterns, but not by object identities or by the number $N$ of
-objects. Changing $N$ only changes the fixed object representations used to
-implement the equality test above. The same parameters can therefore be
-instantiated on problems with a different number of objects. After
-binarization, they directly specify the learned lifted \strips model.
 
-Appendix~\ref{app:brap-program} describes the corresponding B-RASP program for the LS Transformer, which extends propositional formulation of~\citet{nunez2026strips}.
-
-\noindent
-\begin{minipage}[t]{0.53\textwidth}
-\vspace{0pt}
-    \centering
-    \includegraphics[width=\linewidth]{LS_transformer.png}
-    \captionof{figure}{Architecture of the Lifted \strips Transformer.}
-    \label{fig:ls-transformer}
-\end{minipage}
-\hfill
-\begin{minipage}[t]{0.48\textwidth}
-\vspace{0pt}
-
-\end{minipage}
+\iffalse
+    \noindent
+    \begin{minipage}[t]{0.53\textwidth}
+    \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{LS_transformer.png}
+        \captionof{figure}{Architecture of the Lifted \strips Transformer.}
+        \label{fig:ls-transformer}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+    \vspace{0pt}
+    
+    \end{minipage}
+\fi
 
 
 
-\textbf{Carlos - comentar que applicability supervision sería aplicable al LB transformer también pero, como no podemos hacer symbolic alignment, no se podría extraer \strips model. Por tanto, en nuestros experimentos no usamos applicability supervision con LB.}
 
-\textbf{Carlos -- for the SB Transformer, we use a special separator token <sep> between actions. Labels are associated with the SEP token after each action, so the transformer uses that token to predict applicability for domain/goal actions.}
 
-\textbf{Carlos -- The process for extracting the STRIPS model from the transformers is explained in the overleaf document, section 16.11. The method for applicability supervision is in Section 16.11.1, and for state supervision in 16.11.2.}
-
-State prediction, SB transf, Randomized Obj Embeds
-
-\textbf{Carlos -- Hablar aquí de cómo se extrae el \strips model en cada supervision setting (applicability via alignment; final-state via state probing). Para más información, mirar Appendixes C y D y documento overleaf. Todos los planning experiments son con Mimir, con gbfs y FF heuristic (ver sección 8.3 KR paper). Max num of generated nodes is 10M per problem.}
-
-\subsection{Lifted Stick-Breaking Transformer}
+\subsection{Lifted Stick-Breaking (LB) Transformer}
 \label{sec:lb-transformer}
 
+The LB Transformer generalizes the SB Transformer of \citet{nunez2026strips} to the lifted \strips{} setting. It follows a decoder-style Transformer architecture, replacing softmax with stick-breaking attention~\citep{tan2025scaling}, using strict future masking and no positional encodings.
+
+Each ground action $a_i=\alpha_i(o_{i,1},\ldots,o_{i,k_i})$ is encoded as the token sequence $\alpha_i,\;o_{i,1},\;\ldots,\;o_{i,k_i},\;\texttt{<sep>}$. Concatenating these sequences yields the input representation of the trace. Action-schema and \texttt{<sep>} tokens use standard learnable embeddings, whereas objects use randomized, non-learnable embeddings.
+Each action's label and prediction are associated with its following \texttt{<sep>} token. The final contextual representation of this token produces $y_\theta(i)\in[0,1]$, the predicted probability that $a_i$ is inapplicable given the preceding actions in the trace.
+
+For each trace, every object $o$ is assigned an embedding $r(o)\in\{-1,+1\}^{d_{\mathrm{model}}}$, with each coordinate sampled independently and uniformly. The same embedding is reused for all occurrences of $o$ within that trace, allowing the transformer to recognize when arguments of different actions refer to the same object. Object embeddings are resampled whenever a trace is sampled, encouraging the transformer to learn lifted operations that are invariant under object renamings. 
+This scheme supports a variable-size object vocabulary $\mathcal{V}_O$, with $2^{d_{\mathrm{model}}}$ possible embedding vectors. Thus, like the LS Transformer, the LB Transformer can be applied to traces with more objects than those seen during training.

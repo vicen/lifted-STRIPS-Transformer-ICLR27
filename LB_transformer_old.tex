@@ -1,0 +1,98 @@
+The Lifted Stick-Breaking (LB) Transformer is a decoder-style
+Transformer~\citep{transformers} that extends to the lifted setting the
+architecture introduced by~\citet{nunez2026strips}. Like the LS Transformer, it uses stick-breaking
+attention~\citep{tan2025scaling} with no positional encodings. Unlike the LS Transformer, it
+does not explicitly represent predicates, preconditions, or effects in its
+parameters. The lifted extension requires recognizing when object arguments in different
+ground actions refer to the same objects. At the same time, object representations should not encode persistent object identities.
+
+The LB Transformer consists of:
+\begin{itemize}
+\item[(i)] learned embeddings for action-schema and \texttt{<sep>} tokens,
+together with randomized, non-learnable embeddings for objects. A ground
+action $a_i=\alpha_i(o_{i,1},\ldots,o_{i,k})$ is represented by the token
+sequence
+$\alpha_i,o_{i,1},\ldots,o_{i,k},\texttt{<sep>}$.
+For each presentation of a trace, every object is assigned a distinct random
+embedding, reused for all its occurrences in that trace and resampled across
+presentations;
+
+\item[(ii)] $L$ stacked Transformer blocks with $H$ attention heads per block.
+Each head implements stick-breaking self-attention with strict future masking
+and no positional encodings, followed by the usual position-wise
+transformations; and
+
+\item[(iii)] a final linear layer with sigmoid activation applied to the
+representation of the \texttt{<sep>} token following each ground action.
+\end{itemize}
+
+More precisely, given a trace
+$\tau=(a_0,\ldots,a_{n-1})$, with
+$a_i=\alpha_i(o_{i,1},\ldots,o_{i,k_i})$, we construct the token sequence
+\[
+\widetilde{\tau}
+=
+\bigl(
+\alpha_0,o_{0,1},\ldots,o_{0,k_0},\texttt{<sep>},
+\ldots,
+\alpha_{n-1},o_{n-1,1},\ldots,o_{n-1,k_{n-1}},\texttt{<sep>}
+\bigr).
+\]
+Let $m$ denote the number of tokens in $\widetilde{\tau}$ and $\nu_i$ the
+position of the \texttt{<sep>} token following action $a_i$.
+The LB Transformer produces contextual representations
+$h_j^{(\ell)}\in\mathbb{R}^{d_{\text{model}}}$ for each token position
+$j=0,\ldots,m-1$ and layer $\ell=0,\ldots,L$.
+
+At layer $\ell=0$, action-schema and \texttt{<sep>} tokens are mapped to
+learned embeddings. Object embeddings, instead, are generated randomly.
+For each presentation of a trace, every object $o$ is assigned a distinct
+random vector $r(o)$. The same vector is used for all occurrences of $o$
+within that trace. A new assignment is sampled for each trace presentation,
+both during training and at test time.
+Consequently, the vector assigned to an object changes across traces. Within
+a trace, however, all occurrences of the same object receive the same vector,
+so the model can still recognize when two arguments refer to the same object.
+
+
+For $\ell=1,\ldots,L$, the representations are updated by
+\[
+h_0^{(\ell)},\ldots,h_{m-1}^{(\ell)}
+=
+\mathrm{Block}^{(\ell)}
+\bigl(h_0^{(\ell-1)},\ldots,h_{m-1}^{(\ell-1)}\bigr),
+\]
+where each block consists of multi-head self-attention using stick-breaking
+normalization and strict future masking, followed by a position-wise
+feed-forward network with GELU activation~\cite{hendrycks2016gaussian}.
+Layer normalization (pre-norm) and residual connections are applied in the
+standard way. No positional encodings are used.
+
+After the final layer, predictions associated with action $a_i$ are made
+from the representation $h_{\nu_i}^{(L)}$ of its following
+\texttt{<sep>} token. A linear layer with learnable parameters $w$ and $b$
+yields
+\[
+y_\theta(i)
+=
+\sigma\!\bigl(w^\top h_{\nu_i}^{(L)}+b\bigr)
+\in[0,1],
+\]
+where $\sigma$ is the sigmoid function. The value $y_\theta(i)$ represents
+the predicted probability that $a_i$ is inapplicable given the preceding
+actions in the trace.
+
+
+
+
+
+
+\textbf{Carlos - comentar que applicability supervision sería aplicable al LB transformer también pero, como no podemos hacer symbolic alignment, no se podría extraer \strips model. Por tanto, en nuestros experimentos no usamos applicability supervision con LB.}
+
+\textbf{Carlos -- for the SB Transformer, we use a special separator token <sep> between actions. Labels are associated with the SEP token after each action, so the transformer uses that token to predict applicability for domain/goal actions.}
+
+\textbf{Carlos -- The process for extracting the STRIPS model from the transformers is explained in the overleaf document, section 16.11. The method for applicability supervision is in Section 16.11.1, and for state supervision in 16.11.2.}
+
+State prediction, SB transf, Randomized Obj Embeds
+
+\textbf{Carlos -- Hablar aquí de cómo se extrae el \strips model en cada supervision setting (applicability via alignment; final-state via state probing). Para más información, mirar Appendixes C y D y documento overleaf. Todos los planning experiments son con Mimir, con gbfs y FF heuristic (ver sección 8.3 KR paper). Max num of generated nodes is 10M per problem.}
