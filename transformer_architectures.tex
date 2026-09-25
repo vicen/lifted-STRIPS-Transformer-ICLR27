@@ -1,15 +1,32 @@
-\label{sec:arch}
-\subsection{Lifted \strips Transformer}
-\label{sec:ls-transformer}
-The Lifted \strips (LS) Transformer extends the \strips Transformer of~\citet{nunez2026strips} from propositional to lifted action models. It consists of a single self-attention block with one head for each predicate $p$, which tracks the truth values of its ground instances along the trace. For a precondition $p(\mathbf{o})$ of an action $a_i$, this requires identifying preceding effects on the same ground instance and selecting the most recent one. In the lifted setting, matching the same ground instance requires matching both the predicate and its object arguments.
+The Lifted \strips (LS) Transformer follows the same conceptual design
+as the \strips Transformer of~\citet{nunez2026strips}, but extends it
+from propositional to lifted action models.
 
-We describe how a \strips model
-$M=\langle\mathcal{P},A\rangle$ is represented by the LS Transformer.
+Consider a \strips model $M=\langle\mathcal{P},A\rangle$. The applicability
+of an action $a_i$ depends on the truth of its preconditions, each determined
+by the most recent preceding action that affects the corresponding ground
+atom. Masked hard attention implements this recency-based dependency by
+retrieving the rightmost such action. Queries identify preconditions of the
+current action, keys identify effects of preceding actions on the same atom,
+and values indicate whether these effects make the atom true or false.
+This is the core idea behind the \strips Transformer. In the lifted setting,
+identifying the same ground atom additionally requires matching both its
+predicate $p$ and object arguments $\mathbf{o}$.
+
+The LS Transformer consists of a single self-attention block with one head
+for each predicate $p$, which tracks the truth values of its ground
+atoms along the trace. To distinguish these atoms, the architecture encodes the 
+possible occurrences of each predicate within an action schema through
+\emph{action patterns}. For a predicate $p$ of arity $r$, an action pattern 
+$\alpha[\rho]$, with $\rho=(\rho_1,\ldots,\rho_r)$, specifies how the arguments 
+of $p$ bind to the variables of $\alpha$. For example, $\alpha[3,1]$ represents 
+the occurrence $p(x_3,x_1)$ in $\alpha(x_1,x_2,x_3)$.
+
 For each predicate $p\in\mathcal{P}$, action schema $\alpha\in A$, and valid
 action pattern $\alpha[\rho]$, the LS Transformer has three scalar values
 $q_{p,\alpha,\rho}$, $k_{p,\alpha,\rho}$, and $v_{p,\alpha,\rho}$ in
-$[0,1]$, used in its query, key, and value computations. In the binary
-representation of $M$, these values are
+$[0,1]$, used in its query, key, and value computations. Their binary
+values for a \strips model $M$ are
 \begin{align}
 q_M(p,\alpha,\rho)
 &=
@@ -28,9 +45,10 @@ v_M(p,\alpha,\rho)
 p(x_{\rho_1},\ldots,x_{\rho_r})\in\mathrm{del}(\alpha)
 \right].
 \end{align}
-Thus, they specify the preconditions and effects of every action schema.
-During learning, $q$, $k$, and $v$ are differentiable relaxations of these
-binary values; their parameterization is detailed in
+Thus, $q_M$ indicates whether the predicate occurrence is a precondition,
+$k_M$ whether it is an effect, and $v_M$ whether that effect is a delete
+effect. During learning, $q$, $k$, and $v$ are differentiable relaxations
+of these binary values; their parameterization is detailed in
 Appendix~\ref{app:strips-transformer}.
 
 The head for predicate $p$ compares an occurrence of $p$ in the current action
@@ -51,7 +69,7 @@ k_{p,\alpha_j,\sigma}\,
 \end{align}
 The $q$ term indicates whether the occurrence in $a_i$ is a precondition, the $k$ term whether the occurrence in $a_j$ is an effect, and the indicator ensures that both refer to the same ground instance of $p$. The equality test is implemented using one-hot object representations and structured query and key projections, as detailed in Appendix~\ref{app:strips-transformer}.
 
-We then apply stick-breaking attention to the scores of~Eq.~\ref{eq:scores}. For binary scores, it selects the most recent effect on the same ground instance of $p$, while $v$ indicates whether this effect deletes $p$. The resulting output $Y_{p,\rho}(i)$ is therefore $1$ exactly when the corresponding precondition is false.
+We then apply stick-breaking attention to these scores. For binary scores, it selects the most recent effect on the same ground instance of $p$, while $v$ indicates whether this effect deletes $p$. The resulting output $Y_{p,\rho}(i)$ is therefore $1$ exactly when the corresponding precondition is false.
 
 The precondition outputs are combined as a continuous OR,
 \begin{align}
@@ -105,15 +123,3 @@ State prediction, SB transf, Randomized Obj Embeds
 \subsection{Lifted Stick-Breaking Transformer}
 \label{sec:lb-transformer}
 
-Our second architecture, the Lifted Stick-Breaking (LB) Transformer remains closer to a standard decoder-style Transformer. Unlike the LS Transformer, its attention heads and parameters are not aligned with predicates, preconditions, or effects.
-
-
-\paragraph{Lifted representation and randomized object embeddings.}
-The key idea is to prevent the Transformer from associating its computation with particular object identities, encouraging it instead to reason about whether different occurrences refer to the same object.
-A ground action
-$a_i=\alpha_i(o_{i,1},\ldots,o_{i,k})$
-is represented by the token sequence
-\[
-\alpha_i,\;o_{i,1},\ldots,o_{i,k},\;\texttt{<sep>}.
-\]
-Action-schema and separator tokens have learned embeddings, whereas object embeddings are generated rather than learned. For each trace, every object is assigned a distinct random vector, which is reused for all its occurrences in that trace. The assignment is resampled whenever the trace is presented. Thus, object identities have no persistent representation across examples, encouraging the model to learn equality-based relations that transfer to unseen objects and larger object sets.
