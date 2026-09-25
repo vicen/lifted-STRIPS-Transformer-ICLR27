@@ -162,36 +162,39 @@ Additionally, the \strips models extracted from the transformers,  which  are fu
 
 
 \subsection*{AI use statement}
-(This section is \textbf{required} and does not count toward the page limit.)
 
-In this work, we used generative AI tools for [tasks with required disclosure]. We have not used generative AI tools for [other tasks with required disclosure], and [the rest of the required disclosure tasks] are not applicable to this work. Additionally, we used generative AI tools for [tasks with recommended disclosure]. We have reviewed all AI-assisted work. [Elaborate. For example, “we checked LLM-generated research ideas for potential plagiarism through a manual literature survey”, “LLM-generated code was verified and tested for correctness by 2 authors”, etc.]. We take responsibility for the final content of this work, including text, claims or artifacts produced with the aid of generative AI.
+In this work, we used generative AI tools for the following tasks:
+\textbf{implementing methods}, including most of the LS and LB Transformer implementation, as well as scripts used to run experiments and aggregate results;
+\textbf{formulating mathematical claims}, specifically to identify an error in the B-RASP program of Appendix \ref{app:brap-program} and propose a correction, which was then verified step-by-step by the authors;
+\textbf{interpreting results}, specifically by identifying the class imbalance issue affecting predicate \texttt{at} in the \lgt dataset.
+Additionally, we used generative AI tools to:
+\textbf{suggest experimental parameters}, by providing suitable problem generator parameters for scaling the number of objects in our generalization experiments;
+\textbf{improve phrasing and check grammar}; and
+\textbf{standardize mathematical notation}.
 
-See the ICLR 2027 AI Policy for Authors for more details. This statement should
-not be more than 1 page.
+We have \textit{not} used generative AI tools to: \textbf{generate synthetic data sets},\textbf{ help develop theoretical models or conceptual frameworks}, \textbf{propose or refine hypotheses}, \textbf{design or provide feedback on research methodology or experiments}, \textbf{assist with translation}, \textbf{clean and reformat dataset}, \textbf{support qualitative and thematic data analysis}.
+As this paper contains no mathematical proofs, the following uses are not applicable: \textbf{proving mathematical claims} and \textbf{assisting in the writing of proofs}.
 
+We have reviewed all AI-assisted work.
+All LLM-generated code was verified and tested by one of the authors.
+The correction to the B-RASP program in Appendix~\ref{app:brap-program} was checked step-by-step for correctness.
+All LLM-assisted modifications to the main paper and appendices, including mathematical expressions, were reviewed by the authors.
+
+We take responsibility for the final content of this work, including text, claims or artifacts produced with the aid of generative AI.
+ 
 
 \subsection*{Reproducibility statement}
 
-(This section is \textbf{recommended} and does not count toward the page limit.)
-
-It is important that the work published in ICLR is reproducible. Authors are
-strongly encouraged to include a paragraph-long Reproducibility Statement at the
-end of the main text (before references) to discuss the efforts that have been
-made to ensure reproducibility. This paragraph should not itself describe
-details needed for reproducing the results, but rather reference the parts of
-the main paper, appendix, and supplemental materials that will help with
-reproducibility. For example, for novel models or algorithms, a link to an
-anonymous downloadable source code can be submitted as supplementary materials;
-for theoretical results, clear explanations of any assumptions and a complete
-proof of the claims can be included in the appendix; for any datasets used in
-the experiments, a complete description of the data processing steps can be
-provided in the supplementary materials. Each of the above are examples of
-things that can be referenced in the reproducibility statement.
+% >> Add particular ref. to appendices once I add appendices with hyperparameters and experiment parameters
+To support reproducibility, we provide as supplementary material our anonymized source code, benchmark domain files, and scripts for data generation and aggregation of experimental results.
+The main paper describes the data-generation, training, and testing procedures, evaluation metrics, and hardware used. 
+The appendices provide the experimental configurations, model hyperparameters, and a detailed description of the LS Transformer architecture.
 
 
-\subsubsection*{Acknowledgments}
-Use unnumbered third level headings for the acknowledgments. All
-acknowledgments, including those to funding agencies, go at the end of the paper.
+% > Camera ready
+%\subsubsection*{Acknowledgments}
+%Use unnumbered third level headings for the acknowledgments. All
+%acknowledgments, including those to funding agencies, go at the end of the paper.
 
 \bibliography{iclr2027_conference}
 \bibliographystyle{iclr2027_conference}
