@@ -1,0 +1,55 @@
+% TODO
+% > Merge with other sections
+% > See where to explain init-p, test-p actions (they are hard-coded in LS). In both LS, LB their applicability is not predicted
+% > We also need to talk about the supervised focal-loss for training -> probably in learning tasks!
+\textbf{TODO - merge with sections 4 or 5. We also need to talk about init-p/test-p actions and about the training loss (focal loss, etc.)}
+
+\paragraph{State reconstruction.}
+Under final-state supervision, both the LS and LB Transformers are trained to
+predict the state resulting from each trace. We exploit this capability after
+training to reconstruct the unobserved intermediate states of the training
+traces, in a procedure that we call \emph{state reconstruction}. In particular,
+for every prefix ending in a domain action $a_i$, we query the trained
+transformer using test-$p$ actions to determine the truth values of ground atoms
+at the state reached after $a_i$. For every pair of consecutive trace
+actions $a_i$ and $a_{i+1}$, we only query atoms instantiated over objects
+appearing in either action, since these are the only atoms that can occur as
+effects of $a_i$ or preconditions of $a_{i+1}$. This yields reconstructed
+state-action traces $s_0,a_0,s_1,a_1,\ldots,a_{n-1},s_n.$
+
+We then lift the ground atoms relative to the arguments of the corresponding
+action schema and aggregate the resulting observations across the training
+traces. A lifted atom is included as a precondition when it is predicted true before at least $95\%$ of the occurrences of the action schema. To infer effects, we compare the reconstructed states before and after each action occurrence: an atom votes for \emph{add} if it changes from false to true, \emph{delete} if it changes from true to false, and \emph{none} otherwise. The most frequent label determines its effect.
+The resulting preconditions and
+effects define the extracted lifted \strips model. This procedure is independent
+of the transformer architecture and is therefore used for both the LS and LB
+Transformers under final-state supervision.
+
+\paragraph{Direct extraction via symbolic alignment.}
+Under applicability supervision, traces contain their initial state but no subsequent states, so state reconstruction cannot be used.
+For the LS Transformer, however, the lifted \strips model can instead be read
+directly from its learned parameters. After binarization, the query parameters
+$q_{p,\alpha,\rho}$ specify whether the lifted atom given by
+$(p,\rho)$ is a precondition of $\alpha$, the key parameters
+$k_{p,\alpha,\rho}$ specify whether it is an effect, and the value parameters
+$v_{p,\alpha,\rho}$ specify the sign of that effect, with $v=0$ for an add
+effect and $v=1$ for a delete effect. To associate the hidden predicate heads
+with the predicates of the ground-truth \strips model, we use the init-$p$ setup actions:
+init-$p$ has $p$ as its single add effect, and therefore identifies the hidden
+predicate corresponding to $p$. 
+Hidden predicates for which no such alignment
+is available retain an anonymous name in the extracted model. In contrast, the
+parameters of the LB Transformer have no direct correspondence with \strips
+preconditions or effects. Although the LB Transformer could in principle be
+trained with applicability supervision, we could not extract a symbolic model
+from it in this setting, and therefore do not consider this combination in our
+experiments.
+
+In both supervision settings, we remove init-$p$ and test-$p$ actions from the extracted \strips model $M'$.
+
+\paragraph{Planning.}
+Once a \strips model $M'$ has been extracted from the transformer, it can be used for planning with an off-the-shelf symbolic planner. Let $M$ denote the ground-truth \strips model, and $P$ a problem over $M$ which we want to solve.
+We can simply give $M'$ and $P$ as inputs to the planner. If $M'$ is equivalent to $M$, then the plan returned by the planer will be a valid solution for $P$.
+In our experiments, we use the Mimir planner~\citep{mimir} with greedy
+best-first search (GBFS) and the FastForward (FF) heuristic~\citep{hoffmann2001ff}.
+For each problem, search is given a budget of at most $10^7$ generated nodes.

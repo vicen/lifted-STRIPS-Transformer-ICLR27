@@ -115,7 +115,7 @@ Z_\gamma(i)=1,
 \label{app:brap-program}
 
 We now provide a B-RASP Program for recognizing lifted \strips, which can be seen as a generalization of the one provided in \citep[Appendix B]{nunez2026strips} for recognizing propositional \strips.
-In propositional \strips, actions have no variables and are instead grounded on a fixed set of objects $O_N$. Thus, the resulting propositional \strips model is tied to $O_N$ and cannot generalize to a larger set of objects.
+In propositional \strips, actions have no variables and are instead grounded on a fixed set of objects $O$. Thus, the resulting propositional \strips model is tied to $O$ and cannot generalize to a larger set of objects.
 We also take inspiration from \citep[Appendix B]{sarrof2026verify}, although we note that their program is encoded in C*-RASP[Pos], and ours in standard B-RASP.
 
 Our program computes $f^{\text{B-RASP}}_{M,N}$, which encodes the Boolean function $f_M$ that discriminates positive from negative action traces $\tau$ of a given lifted \strips model $M$, where each $\tau$ can refer to a maximum of $N$ objects. We show that such a program can be constructed for any finite $N$. From the perspective of this program, the LS and LB Transformers can be viewed as learning $f^{\text{B-RASP}}_{M,N}$ for some number $N$ of training objects, in a way that enables generalization to traces involving any larger number $N' > N$ of objects at test time.
@@ -123,8 +123,8 @@ Our program computes $f^{\text{B-RASP}}_{M,N}$, which encodes the Boolean functi
 Let $\mathcal{P}$ and $A$ denote the finite sets of predicates and action
 schemas in $M$, respectively, and let
 $R = \max_{\alpha\in A} \operatorname{ar}(\alpha)$
-be the maximum action arity. We consider an arbitrary set of objects
-$O_N=\{o_1,\ldots,o_N\}$. A trace
+be the maximum action arity. We consider an arbitrary set of $N$ objects 
+$O=\{o_1,\ldots,o_N\}$. A trace
 $\tau=(a_0,\ldots,a_{m-1})$
 consists of ground actions
 \[
@@ -146,7 +146,7 @@ o_{0,1}\cdots o_{0,\operatorname{ar}(\alpha_0)}
 o_{m-1,1}\cdots o_{m-1,\operatorname{ar}(\alpha_{m-1})}.
 \]
 Hence, for fixed $M$ and $N$, the input alphabet
-$\Sigma_{M,N}=A\cup O_N$ is finite. Let $n$ denote the length of
+$\Sigma_{M,N}=A\cup O$ is finite. Let $n$ denote the length of
 $w_\tau$, and let $i,j\in[n]$ denote positions in this string.
 
 The input string $w_\tau$ is encoded by several initial vectors $I_t$, one for each
@@ -253,7 +253,7 @@ It remains to determine whether a precondition pattern of the action ending
 at $i$ and an effect pattern of the action ending at $j$ refer to the same
 ground atom. For every $p\in\mathcal{P}$,
 $\rho\in\mathcal{R}_p$, predicate argument
-$\ell \in \{1,\ldots,\operatorname{ar}(p)\}$, and object $o\in O_N$, define
+$\ell \in \{1,\ldots,\operatorname{ar}(p)\}$, and object $o\in O$, define
 \begin{equation}
 \begin{aligned}
 \operatorname{Prec}_{p,\rho,\ell,o}(i)
@@ -298,7 +298,7 @@ K_{p,\sigma}(j)
 \land
 \bigwedge_{\ell=1}^{\operatorname{ar}(p)}
 \;
-\bigvee_{o\in O_N}
+\bigvee_{o\in O}
 \left[
 \operatorname{Prec}_{p,\rho,\ell,o}(i)
 \land
@@ -325,8 +325,8 @@ Equation~\ref{eq:brasp-match} is simply shorthand for a Boolean formula over
 previously defined vectors at positions $i$ and $j$, where $j$ denotes the
 ``attention index'' of the corresponding attention operation
 (see Eq.~\ref{eq:brasp-lifted-attention} below).
-Also, since $O_N$ is finite,
-the disjunction over $o\in O_N$ is finite and can therefore be expressed
+Also, since $O$ is finite,
+the disjunction over $o\in O$ is finite and can therefore be expressed
 using standard B-RASP operations.
 
 For each predicate $p$ and precondition pattern
@@ -435,7 +435,7 @@ f_M(\tau).
 The program above uses only standard B-RASP operations. For every finite
 $N$, the alphabet $\Sigma_{M,N}$ and all Boolean formulas in the program are
 finite. The program does, however, depend on $N$, as there is
-one initial vector $I_o$ for every $o\in O_N$, and
+one initial vector $I_o$ for every $o\in O$, and
 Eq.~\ref{eq:brasp-match} ranges over these objects. Hence, the
 construction yields a B-RASP program $f^{B\text{-RASP}}_{M,N}$ for every
 finite, but arbitrarily large $N$, rather than a single B-RASP program
@@ -444,7 +444,7 @@ over an unbounded object alphabet.
 \section{Extended Description of LS Transformer}
 \label{app:strips-transformer}
 
-Here we present an extended description of Section (\textbf{Add reference!}) in the main paper, detailing the architecture of the LS Transformer.
+Here we present an extended description of Section \ref{sec:ls-transformer} in the main paper, detailing the architecture of the LS Transformer.
 The LS Transformer can be viewed as the neural realization of the B-RASP program in Section~\ref{app:brap-program}. Every set of parameter values $\theta$ encodes a continuous approximation of a (lifted) \strips model, with a one-to-one correspondence between binarized parameters $\bar{\theta}$ and \strips models $M$.
 All operations in the LS Transformer are differentiable end-to-end.
 Hence, it provides a method for learning \strips models $M$ with standard gradient-based optimization techniques, in a supervised manner from sequences of tokens encoding action traces over $M$.
@@ -467,7 +467,7 @@ Consider an input trace
 \qquad
 a_i = \alpha_i(o_{i,1},\ldots,o_{i,\operatorname{ar}(\alpha_i)}),
 \end{equation}
-whose actions are grounded (i.e., instantiated) over a set $O_N=\{o_1,\ldots,o_N\}$ of $N$ objects.
+whose actions are grounded (i.e., instantiated) over a set $O=\{o_1,\ldots,o_N\}$ of $N$ objects.
 
 Each ground action $a_i$ is represented by a single fixed binary embedding
 $e(a_i)$. We regard token embeddings and their projected representations as row
