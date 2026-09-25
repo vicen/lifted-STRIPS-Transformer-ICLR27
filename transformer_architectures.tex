@@ -102,3 +102,18 @@ State prediction, SB transf, Randomized Obj Embeds
 
 \textbf{Carlos -- Hablar aquí de cómo se extrae el \strips model en cada supervision setting (applicability via alignment; final-state via state probing). Para más información, mirar Appendixes C y D y documento overleaf. Todos los planning experiments son con Mimir, con gbfs y FF heuristic (ver sección 8.3 KR paper). Max num of generated nodes is 10M per problem.}
 
+\subsection{Lifted Stick-Breaking Transformer}
+\label{sec:lb-transformer}
+
+Our second architecture, the Lifted Stick-Breaking (LB) Transformer remains closer to a standard decoder-style Transformer. Unlike the LS Transformer, its attention heads and parameters are not aligned with predicates, preconditions, or effects.
+
+
+\paragraph{Lifted representation and randomized object embeddings.}
+The key idea is to prevent the Transformer from associating its computation with particular object identities, encouraging it instead to reason about whether different occurrences refer to the same object.
+A ground action
+$a_i=\alpha_i(o_{i,1},\ldots,o_{i,k})$
+is represented by the token sequence
+\[
+\alpha_i,\;o_{i,1},\ldots,o_{i,k},\;\texttt{<sep>}.
+\]
+Action-schema and separator tokens have learned embeddings, whereas object embeddings are generated rather than learned. For each trace, every object is assigned a distinct random vector, which is reused for all its occurrences in that trace. The assignment is resampled whenever the trace is presented. Thus, object identities have no persistent representation across examples, encouraging the model to learn equality-based relations that transfer to unseen objects and larger object sets.

@@ -1,29 +1,63 @@
 % Original text commented below .. please fill the refs, some from commented text below 
 % Include also Sarrof et al, Nunez-Molina et al ..
 
-Recent work  has studied the  ability of transformers to learn world models from next-token prediction
-\citep{Toshniwal_Wiseman_Livescu_Gimpel_2022,li_iclr,nanda2023linear,world-models2,vafa2025what}  and
-to generalize in length \citep{kazemnejad2023impact,zhou2024algorithms,huang2025formal}. 
-\citet{sarrof2026verify} have  addressed a related problem that involves
-generalization in the number of objects as well, and which results 
-from the verification of  plans in the lifted \strips setting, 
-where difference domain instances share the same action schemas
-and predicate symbols but not the same set of objects
-\citep{russell:book}.  Finally,  \citet{nunez2026strips} have used transformers to learn propositional \strips models
-from action sequences for use with  classical planners off-the-shelf \citep{ghallab:book,geffner:book}.
+%\citet{sarrof2026verify} have  addressed a related problem that involves
+%generalization in the number of objects as well, and which results 
+%from the verification of  plans in the lifted \strips setting, 
+%where different domain instances share the same action schemas
+%and predicate symbols but not the same set of objects
+%\citep{russell:book}. 
 
-In this work, we bring these different threads together by addressing the problem of \emph{learning lifted \strips models} from suitable traces using  a transformer architecture.
-The problem involves a particular class of deterministic world-models  where actions add and delete atoms from the state  provided that the
-precondition atoms are true. The atoms represent Boolean variables, yet the number of atoms in a domain vary with the number of instances.
-As a result, the training and testing traces not only vary in length but also in the number of objects involved.
-  
-We consider two learning settings and two different transformer archiectures. In the first learning setting, the input traces  from which the \strips model are learned encode
-action sequences and an initial state. Some of these traces are positive, if the action sequences are applicable in the given initial state, or negative if they are not.
-In this setting, a single state is observed, the initial state, and traces can be positive or negative. In the second learning setting, the traces are all positive,
-and they are ``labeled''  with the resulting  final state. The first type of traces are  related to those used by \citep{nunez2026strips} to learn \emph{propositional \strips} models,
-while the second type of traces are related to those used by \citet{sarrof2026verify}  to verify plans given the planning domain,  in the lifted \strips settings.
-Note that while in the two learning settings, the predicates  of the "hidden" domain are assumed to be known, no \emph{state transition} is fully or partially
-observed. 
+Recent work has studied the ability of transformers to learn world models from next-token prediction
+\citep{Toshniwal_Wiseman_Livescu_Gimpel_2022,li_iclr,nanda2023linear,world-models2,vafa2025what}
+and to generalize to longer sequences
+\citep{kazemnejad2023impact,zhou2024algorithms,huang2025formal}.
+\citet{sarrof2026verify} have studied the related task of plan verification in the lifted \strips setting, where transformers must generalize both to longer sequences and larger numbers of objects.
+Finally, \citet{nunez2026strips} have used transformers to learn propositional \strips models
+from action sequences for use with off-the-shelf classical planners
+\citep{ghallab:book,geffner:book}.
+
+%In this work, we bring these different threads together by addressing the problem of \emph{learning lifted \strips models} from suitable traces using  a transformer architecture.
+%The problem involves a particular class of deterministic world models where actions add and delete atoms from the state provided that the
+%action preconditions are satisfied. The atoms represent Boolean variables, yet the number of atoms in a domain vary with the number of instances.
+%As a result, the training and testing traces not only vary in length but also in the number of objects involved.
+
+In this work, we bring these different threads together by addressing the problem of
+\emph{learning lifted \strips models} from suitable traces using a transformer architecture.
+Lifted \strips is a logic-based formalism for representing deterministic world models in terms of predicates and
+action schemas defined over variables, so that the same model can be instantiated over
+different sets of objects.
+Therefore, learning such a world model requires generalizing not
+only to traces of different lengths, but also to problem instances with different numbers
+of objects.
+
+%We consider two learning settings and two different transformer architectures. In the first learning %setting, the input traces  from which the \strips model are learned encode
+%action sequences and an initial state. Some of these traces are positive, if the action sequences are %applicable in the given initial state, or negative if they are not.
+%In this setting, a single state is observed, the initial state, and traces can be positive or negative. In %the second learning setting, the traces are all positive,
+%and they are ``labeled''  with the resulting  final state. The first type of traces are  related to those %used by \citep{nunez2026strips} to learn \emph{propositional \strips} models,
+%while the second type of traces are related to those used by \citet{sarrof2026verify}  to verify plans %given the planning domain,  in the lifted \strips settings.
+%Note that while in the two learning settings, the predicates  of the "hidden" domain are assumed to be known, no \emph{state transition} is fully or partially
+%observed. 
+
+We consider two supervision settings for learning.
+Under \emph{applicability supervision}, each trace contains an initial state and an action sequence, whose actions are labeled as applicable or inapplicable, and no subsequent states are observed.
+Under \emph{final-state supervision}, all action sequences are applicable and each trace contains both its initial and final states, while intermediate states remain unobserved.
+The first setting is related to the traces used by \citet{nunez2026strips} to learn propositional \strips models, whereas the second is related to those used by \citet{sarrof2026verify} for plan verification in lifted \strips.
+
+Our main contribution is two transformer architectures for learning lifted \strips models, extending the architectures of \citet{nunez2026strips} from propositional to lifted models.
+The \emph{Lifted \strips (LS) Transformer} incorporates explicit symbolic structure, with parameters mapping directly to the preconditions and effects of lifted \strips actions.
+The \emph{Lifted Stick-Breaking (LB) Transformer} is closer to a standard Transformer, replacing softmax with stick-breaking attention~\citep{tan2025scaling}, using no positional encodings, and assigning randomized embeddings to objects.
+Under applicability supervision, we train the LS Transformer and extract the learned \strips model directly from its parameters.
+Although the LB Transformer could also be trained in this setting, its parameters do not map directly to \strips, so the corresponding symbolic model could not be recovered.
+Under final-state supervision, we train both architectures and extract the model by performing state reconstruction: the trained transformer is used to predict the unobserved intermediate states, after which 
+a simple algorithm extracts the lifted \strips model from the reconstructed state-action traces.
+Figure~\ref{fig:applicability} illustrates both supervision settings.
+
+We evaluate the LS and LB Transformers on five benchmark planning domains.
+Both architectures achieve high accuracy, substantially outperforming standard Transformer baselines with softmax attention and positional encodings.
+Additionally, they show near-perfect generalization to traces containing up to ten times more actions and objects than those seen during training.
+Finally, we extract accurate lifted \strips models from both transformers and use them for planning with off-the-shelf symbolic planners.
+The extracted models are fully interpretable, allowing us to inspect the world dynamics learned by the transformers and identify precise errors when they occur.
 
 \begin{figure*}[!t]
     \centering    
@@ -32,15 +66,18 @@ observed.
 %    \includegraphics[width=\textwidth]{combined4_A.png}
     \includegraphics[width=\textwidth]{combined5_A.png}
 \caption{ 
-\textbf{Overview of the two architectures and supervision settings.}
-We introduce the Lifted \strips (LS) Transformer, whose learned parameters are explicitly aligned with a symbolic action model, and the Lifted Stick-Breaking (LB) Transformer, an architecture closer to the standard Transformer that uses stick-breaking attention and randomized object embeddings. Both are trained from traces, each containing an initial state and an action sequence.
-\textbf{(A) Applicability supervision:} actions in each trace are labeled as applicable or inapplicable, without observing any subsequent state. Only the Lifted \strips (LS) Transformer supports direct extraction of a lifted \strips model from its learned parameters.
-\textbf{(B) Final-state supervision:} each trace contains the resulting final state, but no applicability labels. A lifted \strips  model is  recovered from the LS transformer as before
-\hector{no state reconstruction here; fix in fig}, and from the LB transformer after inferring the intermediate states.
+\textbf{Overview of the two supervision settings.}
+%We introduce the Lifted \strips (LS) Transformer, whose learned parameters are explicitly aligned with a symbolic action model, and the Lifted Stick-Breaking (LB) Transformer, an architecture closer to the standard Transformer that uses stick-breaking attention and randomized object embeddings. Both are trained from traces, each containing an initial state and an action sequence.
+\textbf{(A) Applicability supervision:} each trace contains an initial state and a sequence of applicable and inapplicable actions, without any subsequent states. In this setting, extracting a \strips model is possible only for the LS Transformer.
+\textbf{(B) Final-state supervision:} each trace contains an initial state, a sequence of applicable actions, and a final state. Both the LS and LB Transformers support model extraction in this setting.
 }
-%         \caption{ \textbf{Overview of the two supervision settings.} \textbf{(A) Applicability supervision:} the model receives an initial state together with an action sequence whose actions are labeled as applicable or inapplicable. The Lifted \strips (LS) Transformer can be trained in this setting, and a symbolic action model can be extracted directly from its learned parameters. \textbf{(B) Final-state supervision:} the model receives an initial state, an applicable action sequence, and its resulting final state, but no applicability labels. In this more conventional setting, transformer variants can be trained, including the Lifted Stick-Breaking (LB) Transformer, which uses stick-breaking attention and randomized object embeddings, as well as the LS Transformer. A lifted symbolic model can then be recovered through a sequential state reconstruction procedure.        }
       \label{fig:applicability}
 \end{figure*}
+
+% Previous intro
+\Omit{
+%         \caption{ \textbf{Overview of the two supervision settings.} \textbf{(A) Applicability supervision:} the model receives an initial state together with an action sequence whose actions are labeled as applicable or inapplicable. The Lifted \strips (LS) Transformer can be trained in this setting, and a symbolic action model can be extracted directly from its learned parameters. \textbf{(B) Final-state supervision:} the model receives an initial state, an applicable action sequence, and its resulting final state, but no applicability labels. In this more conventional setting, transformer variants can be trained, including the Lifted Stick-Breaking (LB) Transformer, which uses stick-breaking attention and randomized object embeddings, as well as the LS Transformer. A lifted symbolic model can then be recovered through a sequential state reconstruction procedure.        }
+
 
 Our results show that both the LS and LB Transformers recover lifted world models that generalize to longer traces and to problem instances with more objects than those seen during training, whereas standard Transformer variants with softmax attention and positional encodings fail to recover the correct model. With final-state supervision, both architectures recover a \strips model through sequential state reconstruction, while with applicability supervision the LS Transformer recovers it directly, without observing any state after the initial one.
 
@@ -68,7 +105,7 @@ and another one, where applicable action sequences from an initial state are lab
 \end{itemize}
 
 In addition, following Nunez-Molina et al. (2026) we provide a B-RASP formulation of lifted \strips trace recognition, which is the basis of the LS-transformer.
-
+}
 
 \Omit{Original Intro 
 
