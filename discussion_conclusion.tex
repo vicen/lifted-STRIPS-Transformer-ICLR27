@@ -6,17 +6,43 @@
 % Our LS Transformer tackles this case, and we show that an explicit world model can be recovered, it can be used for planning, and it generalizes to longer traces and more objects.
 % We believe that the key to learning in this setting is to have a \textit{symbolic inductive bias}, as the one encoded in the LS Transformer.
 
-In this work, we addressed whether transformers can learn lifted world models through next-token prediction.
-We used \strips as a language for interpretable, lifted world models, and proposed two transformer architectures.
-The LB Transformer builds on standard soft-attention transformers but replaces softmax with stick-breaking attention and uses no positional encodings.
-The LS Transformer incorporates additional symbolic structure, with parameters that map directly to preconditions and effects of \strips actions.
-We considered two supervision settings: \textit{final-state}, where each trace contains an initial state, a sequence of applicable actions, and the resulting final state; and \textit{applicability}, where the final state is omitted but traces additionally contain inapplicable actions.
+Motivated by work on world models learned through next-token prediction, we studied whether Transformers can recover lifted \strips models from symbolic action traces.
+We introduced the LS Transformer, a symbolically-aligned architecture based on a \brasp formulation of lifted \strips trace recognition, and the LB Transformer, a decoder-style Transformer with stick-breaking attention, no positional encodings, and randomized object embeddings.
+We compared final-state supervision, which provides queries about the resulting state, with applicability supervision, which labels actions without revealing successor states.
 
-Experimental results show that the LS and LB Transformers learn successfully across all five domains,
-unlike baseline transformers with softmax attention and positional encodings.
-We conclude that combining stick-breaking attention with no positional encodings provides a strong inductive bias that aligns with \strips semantics, enabling both learning and generalization.
-As a result, our transformers achieve near-perfect generalization to traces containing up to ten times more actions and objects than those seen during training.
-Additionally, we extract accurate \strips models from the trained transformers and use them directly for planning with off-the-shelf symbolic planners.
-Extracted models are lifted and fully interpretable, so we can inspect the learned dynamics and identify precise errors when they occur.
+Under final-state supervision, LS achieves perfect training, test, and planning accuracy for every seed and domain, while LB attains high predictive accuracy and perfect planning in four domains.
+Under applicability supervision, successful LS runs recover accurate models without successor states, although performance varies across seeds.
+For the best-fitting seeds, LS generalizes perfectly to traces up to ten times longer and, separately, to instances with up to ten times more objects.
+LB also generalizes strongly, with larger losses under object scaling in some domains.
+The comparison with the softmax baselines suggests that recency-biased attention without positional encodings aligns with \strips semantics, while the consistency of LS shows the value of explicit symbolic alignment.
+
+Most extracted models recover the ground-truth dynamics or equivalent ones and support off-the-shelf planning, while their explicit form reveals errors such as irrelevant effects and missing preconditions.
+Applicability supervision remains sensitive to initialization, and class imbalance can impair model extraction under final-state supervision.
+%Because the generalization analysis reports the best-fitting seed, robustness across runs remains open.
 In future work, we plan to explore several extensions, including learning \texttt{STRIPS+} models \citep{jansen2025incomplete} where actions contain fewer arguments, learning from states represented as images \citep{xi2024neuro,xi2026unsupervised}, and learning stochastic world models.
-We hope this will expand the applicability of our approach to settings such as Atari games and robotics.
+
+%Future work will study action models whose omitted arguments are determined by their preconditions, enabling more natural traces~\citep{jansen2025incomplete}.
+%We also plan to learn from perceptual observations~\citep{xi2024neuro,xi2026unsupervised} and stochastic dynamics.
+
+
+%Future work will investigate more stable optimization and better-balanced final-state supervision.
+%We also plan to extend the approach to \texttt{STRIPS+} models~\citep{jansen2025incomplete}, where some action arguments are implicit, and to less symbolic settings involving perceptual observations \citep{xi2024neuro,xi2026unsupervised} or stochastic dynamics.
+
+
+
+\iffalse
+    In this work, we addressed whether transformers can learn lifted world models through next-token prediction.
+    We used \strips as a language for interpretable, lifted world models, and proposed two transformer architectures.
+    The LB Transformer builds on standard soft-attention transformers but replaces softmax with stick-breaking attention and uses no positional encodings.
+    The LS Transformer incorporates additional symbolic structure, with parameters that map directly to preconditions and effects of \strips actions.
+    We considered two supervision settings: \textit{final-state}, where each trace contains an initial state, a sequence of applicable actions, and the resulting final state; and \textit{applicability}, where the final state is omitted but traces additionally contain inapplicable actions.
+    
+    Experimental results show that the LS and LB Transformers learn successfully across all five domains,
+    unlike baseline transformers with softmax attention and positional encodings.
+    We conclude that combining stick-breaking attention with no positional encodings provides a strong inductive bias that aligns with \strips semantics, enabling both learning and generalization.
+    As a result, our transformers achieve near-perfect generalization to traces containing up to ten times more actions and objects than those seen during training.
+    Additionally, we extract accurate \strips models from the trained transformers and use them directly for planning with off-the-shelf symbolic planners.
+    Extracted models are lifted and fully interpretable, so we can inspect the learned dynamics and identify precise errors when they occur.
+    In future work, we plan to explore several extensions, including learning \texttt{STRIPS+} models \citep{jansen2025incomplete} where actions contain fewer arguments, learning from states represented as images \citep{xi2024neuro,xi2026unsupervised}, and learning stochastic world models.
+    %We hope this will expand the applicability of our approach to settings such as Atari games and robotics.
+\fi

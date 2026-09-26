@@ -1,40 +1,33 @@
 
 \subsection{\strips Models}
 
-A lifted \strips model or domain $M=\langle\mathcal{P},A\rangle$ consists of a
-finite set of predicates $\mathcal{P}$ and action schemas
+A lifted \strips model or domain $M=\langle\mathcal{P},A\rangle$ consists of a finite set of predicate symbols $\mathcal{P}$ and action schemas
 $A$~\citep{russell:book,ghallab:book,geffner:book}. Each predicate
 $p\in\mathcal{P}$ denotes a relation over objects with fixed arity
-$r=\operatorname{ar}(p)$. Each action schema
-$\alpha(x_1,\ldots,x_k)\in A$ specifies its preconditions
-$\mathrm{pre}(\alpha)$, add effects $\mathrm{add}(\alpha)$, and delete effects
-$\mathrm{del}(\alpha)$ as \emph{lifted atoms} of the form
-$p(x_{\rho_1},\ldots,x_{\rho_r})$, where $p$ is a predicate and
-$\rho=(\rho_1,\ldots,\rho_r)$, which we call \emph{pattern}, maps the arguments of
-$p$ to the arguments of $\alpha$.
+$r=\operatorname{ar}(p)$. Each action schema $\alpha(x_1,\ldots,x_k)\in A$ specifies sets of preconditions $\mathrm{pre}(\alpha)$, add effects $\mathrm{add}(\alpha)$, and delete effects $\mathrm{del}(\alpha)$ whose elements are lifted atoms of the form $p(x_{\rho_1},\ldots,x_{\rho_r})$.
+A valid pattern for $\alpha$ is a tuple
+$\rho=(\rho_1,\ldots,\rho_r)\in\{1,\ldots,k\}^r$
+with pairwise distinct entries, specifying which action variable fills each argument of $p$. For $r=0$, the unique pattern is $\rho=()$.
+%Each action schema $\alpha(x_1,\ldots,x_k)\in A$ specifies its preconditions $\mathrm{pre}(\alpha)$, add effects $\mathrm{add}(\alpha)$, and delete effects $\mathrm{del}(\alpha)$ as \emph{lifted atoms} of the form $p(x_{\rho_1},\ldots,x_{\rho_r})$, where $p$ is a predicate and $\rho=(\rho_1,\ldots,\rho_r)$, which we call \emph{pattern}, maps the arguments of $p$ to the arguments of $\alpha$.
 We use \emph{lifted} to distinguish this setting from
-\textit{propositional} \strips, where actions have no arguments and instead appear instantiated on objects. Throughout
-the paper, \strips refers to the lifted setting unless stated otherwise.
-Also, we consider untyped \strips, encoding object types when needed with unary
-predicates.
+\textit{propositional} \strips, whose atoms and actions are ground over a fixed object set. %where actions have no arguments and instead appear instantiated on objects.
+Throughout, \strips refers to the lifted setting unless stated otherwise. We use untyped \strips, encoding types as unary predicates.
+
 
 %\emph{Action patterns}, introduced by \citet{sift}, provide an alternative representation of these predicate occurrences. For a predicate $p$ of arity $r$, an action pattern $\alpha[\rho]$, with $\rho=(\rho_1,\ldots,\rho_r)$, specifies how the arguments of $p$ bind to the variables of $\alpha$. For example, $\alpha[3,1]$ represents the occurrence $p(x_3,x_1)$ in $\alpha(x_1,x_2,x_3)$.
-
 A \strips problem or instance $P=\langle M,O,I,G\rangle$ consists of a
-\strips model $M$, a finite set $O=\{o_1,\ldots,o_N\}$ of $N$ objects, an
-initial state $I$, and a goal $G$. Instantiating predicate and action variables
-with objects in $O$ yields (ground) atoms $p(o_1,\ldots,o_r)$ and ground actions
-$a=\alpha(o_1,\ldots,o_k)$, respectively, the latter with the grounded
-preconditions and effects of $\alpha$. Both $I$ and $G$ are sets of ground atoms.
-A state $s$ is represented by the set of ground atoms that are true in it.
-A ground action $a$ is applicable in $s$ when $\mathrm{pre}(a)\subseteq s$ and
-yields $s'=(s\cup\mathrm{add}(a))\setminus\mathrm{del}(a)$, inducing a
-deterministic state-transition model over Boolean state variables. An action trace
-$\tau=(a_0,\ldots,a_{n-1})$ is applicable from $s$ if every action is applicable
-in the state reached by its predecessors, and is a plan for $P$ if it is
-applicable from $I$ and its resulting state contains $G$.
-Finally, since $M$ is lifted, the same model can define problems over different
-finite sets of objects, of arbitrary size.
+\strips model $M$, a finite set $O=\{o_1,\ldots,o_N\}$ of $N$ objects, an initial $I$ and a goal $G$ states.
+Instantiating predicate and action variables with object tuples
+$\mathbf{o}\in O^r$ and $\mathbf{u}\in O^k$ yields ground atoms
+$p(\mathbf{o})$ and ground actions $a=\alpha(\mathbf{u})$, with the
+corresponding grounded preconditions and effects.
+%Instantiating predicate and action variables with objects in $O$ yields (ground) atoms $p(o_1,\ldots,o_r)$ and ground actions $a=\alpha(o_1,\ldots,o_k)$, respectively, the latter with the grounded preconditions and effects of $\alpha$. 
+The initial state $I$ and any state $s$ are sets of true ground atoms, while $G$ is a set of goal atoms. 
+A ground action~$a$ is applicable in $s$ when $\mathrm{pre}(a)\subseteq s$. When applicable, it yields $s'=(s\cup\mathrm{add}(a))\setminus\mathrm{del}(a)$. %, inducing a deterministic state-transition model over Boolean state variables.
+A trace $\tau=(a_0,\ldots,a_{n-1})$ is applicable from $s_0=s$ if each
+$a_i$ is applicable in $s_i$ and produces $s_{i+1}$. It is a plan for $P$ if $s_0=I$ and $G\subseteq s_n$.
+%An action trace $\tau=(a_0,\ldots,a_{n-1})$ is applicable from $s$ if every action is applicable in the state reached by its predecessors, and is a plan for $P$ if it is applicable from $I$ and its resulting state contains $G$.
+Finally, since $M$ is lifted, the same model can define problems over different finite sets of objects, of arbitrary size.
 
 %A problem $P$ defines a deterministic state-transition model, which can be viewed as the dynamics of a deterministic MDP over Boolean state variables. A state $s$ represents a truth-valuation over the ground atoms represented by those which are true in $s$. A ground action $a$ is applicable in $s$ when $\mathrm{pre}(a)\subseteq s$, and maps it to $s'=(s\cup\mathrm{add}(a))\setminus\mathrm{del}(a).$
 
@@ -44,28 +37,23 @@ finite sets of objects, of arbitrary size.
 
 \subsection{Transformers and Attention}
 \label{sec:attention-background}
-
-A Transformer~\cite{transformers} maps a sequence of token representations
-$(h_0,\ldots,h_{n-1})$ into contextual representations using self-attention
-and position-wise transformations. In an attention head, each representation
+A Transformer~\citep{transformers} maps token representations
+$(h_0,\ldots,h_{n-1})$ to contextual representations using self-attention and position-wise feed-forward layers. 
+In an attention head, each representation
 is projected into a query $Q(i)$, key $K(i)$, and value $V(i)$, with attention
-score $S(i,j)=Q(i)K(j)^\top$. Throughout, we use strict future masking, so
-position $i$ can attend only to positions $j<i$. Standard \textit{soft attention} normalizes these scores with the softmax function.
+score $S(i,j)=Q(i)K(j)^\top$.
+We use strict future masking, so position $i$ attends only to positions $j<i$. Soft attention applies softmax over the allowed scores, whereas masked hard attention selects a highest-scoring preceding position, breaking ties in favor of the rightmost one.
+% Throughout, we use strict future masking, so position $i$ can attend only to positions $j<i$. Standard \textit{soft attention} normalizes these scores with the softmax function.
+ %In \emph{masked hard attention}, position $i$ instead selects a preceding position with maximal score, resolving ties in favor of the rightmost one.
+ \brasp~\citep{yang2024masked} is a Boolean language for describing computations of masked hard-attention Transformers.
 
-In \emph{masked hard attention}, position $i$ instead selects a preceding
-position with maximal score, resolving ties in favor of the rightmost one.
-\brasp~\cite{yang2024masked} is a Boolean programming language that provides
-an equivalent abstract representation of masked hard-attention Transformers.
-
-\emph{Stick-breaking attention}~\cite{tan2025scaling} provides a
-differentiable relaxation of this rightmost-selection mechanism. For scores
-$S(i,j)\in[0,1]$, $j<i$, it computes
-$$
+\emph{Stick-breaking attention}~\citep{tan2025scaling} provides a
+differentiable relaxation of this rightmost-selection mechanism. For scores $(i,j)\in[0,1]$, $j<i$, it computes
+\[
 \widetilde S(i,j)
 =
 S(i,j)
 \prod_{k=j+1}^{i-1}
 \bigl(1-S(i,k)\bigr).
-$$
-If scores are binary, only the rightmost position with score $1$ receives
-nonzero weight, thus recovering masked hard attention.
+\]
+For binary scores, the rightmost preceding position with score $1$ receives weight $1$, and all other positions receive weight $0$. If no such position exists, all weights are $0$.

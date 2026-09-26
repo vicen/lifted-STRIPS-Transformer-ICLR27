@@ -445,7 +445,7 @@ over an unbounded object alphabet.
 \label{app:ls-transformer-extended}
 
 Here we present an extended description of Section \ref{sec:ls-transformer} in the main paper, detailing the architecture of the LS Transformer.
-The LS Transformer can be viewed as the neural realization of the B-RASP program in Section~\ref{app:brap-program}. Every set of parameter values $\theta$ encodes a continuous approximation of a (lifted) \strips model, with a one-to-one correspondence between binarized parameters $\bar{\theta}$ and \strips models $M$.
+The LS Transformer can be viewed as the neural realization of the B-RASP program in Appendix~\ref{app:brap-program}. Every set of parameter values $\theta$ encodes a continuous approximation of a (lifted) \strips model, with a one-to-one correspondence between binarized parameters $\bar{\theta}$ and \strips models $M$.
 All operations in the LS Transformer are differentiable end-to-end.
 Hence, it provides a method for learning \strips models $M$ with standard gradient-based optimization techniques, in a supervised manner from sequences of tokens encoding action traces over $M$.
 
@@ -1044,6 +1044,185 @@ The parameters $\theta$ of the LS Transformer depend only on the number of hidde
 The value of $N$ only affects action embeddings and how transformer parameters are instantiated on the projection matrices in Eqs.~\ref{eq:strips-query-projection}, \ref{eq:strips-key-projection}, and \ref{eq:strips-value-projection}.
 This means that the same set of parameters $\theta$ can be instantiated on traces containing a larger number $N'>N$ of objects.
 As a result, the LS Transformer learns lifted operations that generalize to any number $N'$ of objects.
+
+
+
+\section{Problem Instances}
+\label{app:problems}
+
+This appendix describes the problem instances used in our experiments. We differentiate between problems used for training, problems used for testing and planning in the main experiments, and problems used to evaluate generalization to larger numbers of objects. For every set of problems, we detail both the total number $N$ of objects and objects of each particular type, providing ranges for each.
+
+\subsection{Training, test, and planning problems}
+\label{app:problem-instances}
+
+For each domain, we generate 100 training problems, 100 test problems, and 100
+planning problems using different random seeds. Table~\ref{tab:problem-sizes} gives their sizes. Test and
+planning problems use the same size ranges.
+
+\begin{table}[ht]
+\centering
+\caption{Problem sizes for the main experiments. Each domain has 100 problems
+in each of the training, test, and planning splits. Integer intervals are
+inclusive; entries containing several intervals specify their Cartesian product.}
+\label{tab:problem-sizes}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+& \multicolumn{2}{c}{Training} & \multicolumn{2}{c}{Test / planning} \\
+\cmidrule(lr){2-3}\cmidrule(l){4-5}
+Domain & Size parameters & $N$ & Size parameters & $N$ \\
+\midrule
+\texttt{blocksworld} & $b\in[4,10]$ & $4$--$10$ & $b\in[11,20]$ & $11$--$20$ \\
+\texttt{ferry} & $(c,p)\in[2,5]^2$ & $4$--$10$ & $(c,p)\in[6,10]^2$ & $12$--$20$ \\
+\texttt{logistics} & $(c,p,t,a)\in[1,2]^4$ & $6$--$13$ & $(c,p,t,a)\in[3,4]^4$ & $19$--$25$ \\
+& $\ell\in[1,3]$ & & $\ell\in[4,5]$ & \\
+\texttt{npuzzle} & $2\!\times\!3,\ 3\!\times\!3$ & $11,17$ & $3\!\times\!4,\ 4\!\times\!4$ & $23,31$ \\
+\texttt{maze} & $2\!\times\!3,\ 3\!\times\!3$ & $6,9$ & $(r,c)\in[4,5]^2$ & $16,20,25$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+In \texttt{blocksworld}, $b$ is the number of blocks and $N=b$. 
+In \texttt{ferry}, $c$ and $p$ count cars and ports,
+respectively, giving $N=c+p$.
+In \texttt{logistics}, $(c,p,t,a,\ell)$ counts
+cities, packages, trucks, airplanes, and non-airport locations. The generator
+adds one airport per city, so $N=2c+p+t+a+\ell$. Here, $\ell$ counts non-airport
+locations across all cities. For an $r\times c$ grid, \texttt{npuzzle} has $rc$
+positions and $rc-1$ tiles, giving $N=2rc-1$, whereas \texttt{maze} has $N=rc$
+cells, including those that are blocked.
+
+\subsection{Problems for Size Generalization}
+\label{app:generalization-datasets}
+
+We generate 100 additional problems at each of five fixed sizes per domain, using different seeds from the previous datasets.
+Table~\ref{tab:generalization-sizes} lists their sizes and object counts. The five target sizes are approximately evenly spaced between the maximum number of objects during training and ten times that value. The table reports the actual configurations and object counts.
+
+\begin{table}[ht]
+\centering
+\caption{Problem sizes for generalization experiments, with 100 problems per size
+and domain. For \texttt{logistics}, $k=c=p=t=a$ and $\ell$ counts non-airport
+locations. Column \textit{Size 1} contains the problem sizes used for the length generalization experiments.}
+\label{tab:generalization-sizes}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+Domain & Type & Size 1 & Size 2 & Size 3 & Size 4 & Size 5 \\
+\midrule
+\texttt{blocksworld} & $b=N$ & $10$ & $33$ & $55$ & $78$ & $100$ \\
+\addlinespace
+\texttt{ferry} & $c=p$ & $5$ & $16$ & $28$ & $39$ & $50$ \\
+& $N$ & $10$ & $32$ & $56$ & $78$ & $100$ \\
+\addlinespace
+\texttt{logistics} & $(k,\ell)$ & $(2,3)$ & $(7,10)$ & $(11,17)$ & $(16,23)$ & $(20,30)$ \\
+& $N$ & $13$ & $45$ & $72$ & $103$ & $130$ \\
+\addlinespace
+\texttt{npuzzle} & Grid & $3\!\times\!3$ & $5\!\times\!6$ & $6\!\times\!8$ & $8\!\times\!8$ & $8\!\times\!11$ \\
+& $N$ & $17$ & $59$ & $95$ & $127$ & $175$ \\
+\addlinespace
+\texttt{maze} & Grid & $3\!\times\!3$ & $5\!\times\!6$ & $7\!\times\!7$ & $7\!\times\!10$ & $9\!\times\!10$ \\
+& $N$ & $9$ & $30$ & $49$ & $70$ & $90$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Experimental Configuration and Model Hyperparameters}
+\label{app:configuration}
+
+Table~\ref{tab:model-hyperparameters} reports training settings and model hyperparameters.
+These settings are shared across domains and supervision settings,
+with the exception of the predicate counts and training budgets indicated below.
+We use seeds $1$--$5$ for training.
+Every 10,000 training steps, we evaluate trace accuracy on the full training
+dataset and retain the best checkpoint.
+
+\begin{table}[!ht]
+\centering
+\caption{Model and optimization settings. The sinusoidal and RoPE baselines
+share the LB configuration, with the attention and positional-encoding changes
+described below.}
+\label{tab:model-hyperparameters}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Setting & LS & LB / baselines \\
+\midrule
+Transformer layers & $1$ & $8$ \\
+Attention heads per layer & One per hidden predicate & $8$ \\
+Embedding dimension $d_\text{model}$ & N/A & $256$ \\
+Feed-forward dimension & N/A & $1024$ \\
+Feed-forward activation & N/A & GELU \\
+Normalization & N/A & Pre-LayerNorm \\
+Dropout / attention dropout & $0$ / $0$ & $0.1$ / $0.1$ \\
+\midrule
+Optimizer & RAdam & RAdam \\
+Learning rate & $10^{-2}$ & $5\times10^{-5}$ \\
+Batch size (traces) & $16$ & $16$ \\
+Training steps & $100{,}000$ & $500{,}000$ \\
+Training steps in \texttt{logistics} & $100{,}000$ & $750{,}000$ \\
+Focal-loss exponent & $1$ & $1$ \\
+\texttt{bce-weight} for domain actions & $0.999$ & $0.9$ \\
+\texttt{bce-weight} for $\texttt{goal-}p$ actions & $0.5$ & $0.5$ \\
+\midrule
+LS parameter representation & Logits & N/A \\
+LS initialization method & \texttt{z} & N/A \\
+Gumbel temperature & $1\rightarrow0.2$ in $50{,}000$ steps & N/A \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Focal loss weighting.}
+In the focal loss used for training, terms with labels $0$ and $1$ are weighted differently. The parameter \texttt{bce-weight} denotes the label-1 weight for domain actions, with its complemente being used for label-0 terms. Auxiliary $\texttt{goal-}p$ actions use a weight of 0.5 for both labels.
+
+\begin{table}[!ht]
+\centering
+\caption{LS hidden-predicate configurations, used under both supervision
+settings. $(P_0,P_1,P_2)$ gives the number of predicates of arity 0, 1, and 2;
+their sum gives the number of attention heads.}
+\label{tab:hidden-predicate-counts}
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Configuration & $(P_0,P_1,P_2)$ & Total heads \\
+\midrule
+GT: \texttt{blocksworld} & $(1,3,1)$ & $5$ \\
+GT: \texttt{ferry} & $(1,4,1)$ & $6$ \\
+GT: \texttt{logistics} & $(0,7,3)$ & $10$ \\
+GT: \texttt{npuzzle} & $(0,3,2)$ & $5$ \\
+GT: \texttt{maze} & $(0,2,1)$ & $3$ \\
+Shared: all domains & $(1,10,5)$ & $16$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{LS initialization and relaxation.}
+The parameters of the LS Transformer are initialized uniformly in
+the $[0,0.1)$ range for those encoding precondition and effect probabilities ($\theta^{\text{pre}}$ and $\theta^{\text{eff}}$), and in $[0,1)$ for the effect-sign probabilities ($\theta^{\text{del}}$).
+After initialization, they are converted from probabilities to logits,
+and invalid pattern slots are masked.
+Parameters encoding auxiliary actions are fixed:
+\texttt{init-start} has no preconditions and sets every atom false;
+\texttt{init-p} has its associated atom as its single add effect, and no preconditions;
+and \texttt{goal-p} has its associated atom as its single precondition, and no effects.
+The Gumbel-sigmoid temperature decreases linearly from 1 to 0.2 over the first
+50,000 steps and remains at 0.2 afterwards.
+Evaluation disables Gumbel-sigmoid and binarizes the probabilities
+at 0.5.
+
+\paragraph{LB and baseline representations.}
+Action schemas and the separator token have learned embeddings. Object
+embeddings are non-learnable vectors in $\{-1,+1\}^{d_\text{model}}/\sqrt{d_\text{model}}$, resampled
+on every forward pass, with one vector per object within a trace and ensuring two different objects do not get the same vector. Predictions are read at the separator
+following each action. LB uses no positional encodings. The baselines use
+softmax attention with either sinusoidal encodings on the last half of the
+embedding coordinates, scaled by $\sqrt{2/d_\text{model}}$, or RoPE on the last half of
+each query/key head, with base $10{,}000$.
+
+
 
 \section{Extended Generalization Results}
 \label{app:gen}
@@ -1912,12 +2091,3 @@ In this section we provide the complete \strips models extracted from the LS and
 \label{lst:mazefree_full}
 \end{figure*}
 \endgroup
-
-
-
-
-
-
-
-
-

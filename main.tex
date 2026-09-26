@@ -139,7 +139,7 @@ RWTH Aachen University, Germany
 \fi
 
 \begin{abstract}
-Recent work has asked whether transformers trained on sequential data learn reusable world models.
+Recent work has studied whether transformers trained on sequential data learn reusable world models.
 In this paper, we address this question for \textit{lifted models}, i.e., abstract world models that generalize across different numbers of objects.
 To this end, we leverage \strips, a logic-based formalism for specifying lifted, interpretable world models.
 We propose two transformer architectures for learning \strips models:
@@ -148,7 +148,7 @@ and the Lifted Stick-Breaking (LB) Transformer, an architecture closer to a stan
 The transformers are trained in a supervised manner on action traces under two supervision settings.
 Under applicability supervision, each action in a sequence is labeled as applicable or inapplicable given the initial state and preceding actions, and no subsequent states are observed.
 Under final-state supervision, each trace contains an initial state, an applicable action sequence, and the resulting final state, while intermediate states remain unobserved.
-Experiments on five benchmark domains show that both transformers achieve high accuracy and generalize to longer traces and larger numbers of objects.
+Experiments on five domains show that both transformers achieve high accuracy and generalize to longer traces and larger numbers of objects.
 Additionally, the extracted \strips models are fully interpretable and can be used for planning with off-the-shelf symbolic planners.
 \end{abstract}
 
@@ -176,7 +176,7 @@ Additionally, the extracted \strips models are fully interpretable and can be us
 \section{Results}
 \input{results.tex}
 
-\section{Discussion and Conclusion}
+\section{Conclusion}
 \input{discussion_conclusion.tex}
 
 
@@ -206,8 +206,9 @@ We take responsibility for the final content of this work, including text, claim
 
 % >> Add particular ref. to appendices once I add appendices with hyperparameters and experiment parameters
 To support reproducibility, we provide as supplementary material our anonymized source code, benchmark domain files, and scripts for data generation and aggregation of experimental results.
-The main paper describes the data-generation, training, and testing procedures, evaluation metrics, and hardware used. 
-The appendices provide the experimental configurations, model hyperparameters, and a detailed description of the LS Transformer architecture.
+Section \ref{sec:experiments} in the main paper describes the data-generation, training, and testing procedures, evaluation metrics, and hardware used. 
+Appendix \ref{app:problems} describes the problem instances used to generate our datasets,
+whereas Appendix \ref{app:configuration} provides additional information about the experimental configurations and model hyperparameters.
 
 
 % > Camera ready

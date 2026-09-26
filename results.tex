@@ -262,10 +262,19 @@ RoPE
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=\columnwidth]{imgs/gen_plot_blocksworld.jpg}
+    \includegraphics[width=.9\columnwidth]{imgs/gen_plot_blocksworld.jpg}
+\caption{\textbf{Generalization in \bw.}
+Test accuracy for the LS and LB Transformers when varying
+\textbf{(a)} the number of objects up to $10\times$ the training maximum, with trace length fixed at $D=50$, and
+\textbf{(b)} trace length up to $10\times$ the training maximum, with the number of objects fixed at its largest training value.
+For LS, we use the shared predicate configuration from Tables~\ref{tab:main-results} and~\ref{tab:main-results-cont} and report both supervision settings.
+To assess generalization after successful fitting, we show only the seed with the highest training accuracy.
+Each point uses $10^4$ traces, and the $y$-axis starts at $0.6$.
+Results for the remaining domains are in Appendix~\ref{app:gen}.}
+\label{fig:bw-gen}
+\iffalse    
     \caption{\textbf{Generalization in \bw.}
-    Plots show test accuracy for the \strips and LB Transformers when generalizing to
-    \textbf{(a)} larger numbers of objects, up to $10\times$ the training size, while keeping trace length to the training value of $D=50$, and
+    Test accuracy for the \strips and LB Transformers when generalizing to \textbf{(a)} larger numbers of objects, up to $10\times$ the training size, while keeping trace length to the training value of $D=50$, and
     \textbf{(b)} longer traces, up to $10\times$ the training length, while keeping the number of objects to the largest value seen during training.
     For the LS Transformer, we use the shared predicate configuration from Tables~\ref{tab:main-results} and~\ref{tab:main-results-cont}, and report both supervision settings.
     To measure generalization subject to the model correctly fitting the training data, we report only the seed with the highest training accuracy.
@@ -273,8 +282,12 @@ RoPE
     The $y$-axis starts at $0.6$, and we use $10^4$ traces for each dataset.
     Results for the remaining domains are provided in Appendix~\ref{app:gen}.}
     \label{fig:bw-gen}
+\fi
 \end{figure}
 
+
+% > We remove the lifted strips fragment due to space. They all appear in the appendix.
+\iffalse
 \begingroup
 \begin{figure*}[t]
 \centering
@@ -352,6 +365,7 @@ Finally, we note that the extracted models are fully interpretable.
 \label{lst:blocksworld}
 \end{figure*}
 \endgroup
+\fi
 
 % ----------------------------- Analysis - answer Research Question
 
@@ -366,40 +380,78 @@ Finally, we note that the extracted models are fully interpretable.
 % Mention table 1
 % Summarize results baselines vs LS/LB (do not focus on LS vs LB) -> focus on baselines vs LB
 % Analyze results (explain why) - use of SB, NoPE vs softmax, pos enc. - STRIPS inductive bias, generalization, planning
-\paragraph{RQ1: Comparison with standard transformers.}
-Tables~\ref{tab:main-results} and~\ref{tab:main-results-cont} compare the LS and LB Transformers against the two baseline models, using softmax aggregation and either sinusoidal positional encodings or RoPE.
-Both baselines perform poorly across domains, with low training and test accuracy.
-The low accuracy impairs model extraction, yielding inaccurate \strips models in most domains. As a result, the sinusoidal baseline achieves zero or near-zero planning accuracy in four out of five domains, and RoPE in three out of five.
 
-In contrast, the LB Transformer achieves high training and test accuracy in every domain, and perfect planning accuracy in four of them.
-The reason for this large gap in performance is the architectural design of the LB Transformer. 
-By combining stick-breaking attention, no positional encodings, and strict future masking, the LB Transformer encodes the \textit{order} of tokens (i.e., actions) in the input trace $\tau$ instead of their absolute or relative \textit{positions}.
-This provides a strong inductive bias that aligns with \strips semantics, where the applicability of an action $a_i$ depends on the most recent preceding action $a_j$ that affects each of its preconditions, regardless of their distance $i-j$ or absolute positions $i,j$.
-The two baseline models lack this inductive bias and, thus, struggle at the task of learning \strips.
 
-\paragraph{RQ2: Comparison between the LS and LB Transformers, and effect of supervision.}
-Tables~\ref{tab:main-results}--\ref{tab:main-results-cont} show that both the LS and LB Transformers exhibit strong performance under final-state supervision. Of the two, the LS Transformer performs better, achieving perfect training, test and planning accuracy for every seed across all domains.
-We hypothesize that this improved performance is due to its built-in symbolic structure, in which each parameter defines a separate precondition or effect of the underlying \strips model.
 
-Under applicability supervision, the performance of the LS Transformer degrades, showing high variance between seeds. Nonetheless, it still achieves perfect training, test and planning accuracy in every domain for its best seed.
-These results show that both supervision settings provide enough information for learning the ground-truth \strips model, although final-state supervision facilitates learning.
-Finally, the LS Transformer performs similarly for the GT and Shared predicate configurations. This allows the LS Transformer to be trained without knowing the number of ground-truth predicates, by using a larger set of hidden predicates.
+\paragraph{RQ1: Comparison with standard Transformers.}
+Tables~\ref{tab:main-results} and~\ref{tab:main-results-cont} show that both softmax baselines perform poorly across domains, with low training and test accuracy and inaccurate extracted \strips models.
+Sinusoidal yields zero or near-zero planning accuracy in four of five domains, while RoPE does so in three.
+In contrast, LB achieves high training and test accuracy in every domain and perfect planning in four.
+We attribute this gap to LB's order-based recency bias from stick-breaking attention and strict future masking without positional encodings.
+This matches \strips semantics, where applicability depends on the most recent preceding action affecting each precondition, regardless of distance.
+
+\paragraph{RQ2: Symbolic structure and supervision.}
+Under final-state supervision, both architectures perform strongly, while LS achieves perfect accuracy across all reported metrics for every seed and domain.
+We attribute its advantage to the direct symbolic parameterization of preconditions and effects.
+Applicability-supervised LS shows high variance, but in every domain at least one predicate configuration achieves perfect accuracy across all metrics for its best seed.
+Thus, both supervision settings can recover the underlying model, although final-state supervision is easier to optimize.
+Successful runs with the Shared configuration also show that LS need not know the exact number of ground-truth predicates.
 
 \paragraph{RQ3: \strips model extraction and planning.}
-Appendix \ref{app:strips-models} contains the \strips models extracted from the transformers in each domain, while Listing \ref{lst:blocksworld} shows a fragment for \bw.
-The ground-truth model, or an equivalent one, is recovered by each transformer in every domain, with two exceptions.
-First, as shown in Listing~\ref{lst:npuzzle_full}, the LS Transformer trained with applicability supervision learns additional effects for the \texttt{move} action.
-These effects preserve the underlying dynamics but introduce irrelevant atoms that make planning more expensive.
-As a result, the planner exhausts its search budget on two problems, yielding a planning accuracy of $0.98$ (see Table~\ref{tab:main-results}).
-Second, the LB Transformer learns an incorrect \strips model in \lgt, where actions \texttt{drive}, \texttt{fly} and \texttt{load} have missing preconditions for the \texttt{at} predicate (see Listings~\ref{lst:logistics_full}--\ref{lst:logistics_full_continuation}).
-We believe this is caused by class imbalance, since approximately 95\% of \texttt{at} atoms in the final states are false.
-Despite this, the LS Transformer correctly recovers the model under the same supervision setting.
-
-Tables~\ref{tab:main-results}--\ref{tab:main-results-cont} show that perfect planning accuracy is achieved whenever the correct model is recovered. Thus, the extracted \strips models can be directly used for planning with off-the-shelf symbolic planners. Moreover, because the extracted models are fully interpretable, we can assess whether the transformer has learned the correct dynamics and identify the exact errors when it has not.
+Appendix~\ref{app:strips-models} contains all extracted models, which recover the ground-truth model or an equivalent one in almost all cases.
+Two deviations deserve note.
+First, applicability-supervised LS learns extra \texttt{move} effects in \np that preserve the dynamics but introduce irrelevant atoms
+(Listing~\ref{lst:npuzzle_full}).
+Mimir then exhausts its search budget on two problems, reducing planning accuracy to $0.98$.
+Second, LB omits \texttt{at} preconditions from the \texttt{drive}, \texttt{fly}, and \texttt{load} actions in \lgt
+(Listings~\ref{lst:logistics_full}--\ref{lst:logistics_full_continuation}), likely because approximately $95\%$ of \texttt{at} atoms in the final states are false.
+LS recovers the correct \lgt model under the same supervision.
+Except for the search-budget case above, correctly recovered models yield perfect planning, while their explicit form reveals the precise errors in incorrect models.
 
 \paragraph{RQ4: Generalization to longer traces and more objects.}
-Figure~\ref{fig:bw-gen} reports generalization results for \bw, while Appendix~\ref{app:gen} provides results for the remaining domains.
-We evaluate generalization to traces containing up to ten times more actions and objects than seen during training.
-The LS Transformer achieves perfect generalization in both dimensions under both supervision settings, with no loss in accuracy whatsoever.
-The LB Transformer also exhibits remarkable generalization, with only a slight overall decrease in accuracy.
-The largest drops occur for object generalization in \bw, where test accuracy decreases from $99.5\%$ to $96.6\%$, and in \lgt, where it starts at $95.6\%$ and plateaus at approximately $80\%$ for the largest number of objects.
+Figure~\ref{fig:bw-gen} reports results for \bw, with the remaining domains in Appendix~\ref{app:gen}.
+We vary trace length and object count separately up to $10\times$ their training maxima.
+LS remains perfect in both dimensions under both supervision settings.
+LB also generalizes strongly, with its largest losses under object scaling: accuracy falls from $99.5\%$ to $96.6\%$ in \bw and from $95.6\%$ to approximately $80\%$ in \lgt, where it plateaus for the largest instances.
+
+
+
+\iffalse
+    \paragraph{RQ1: Comparison with standard transformers.}
+    Tables~\ref{tab:main-results} and~\ref{tab:main-results-cont} compare the LS and LB Transformers against the two baseline models, using softmax aggregation and either sinusoidal positional encodings or RoPE.
+    Both baselines perform poorly across domains, with low training and test accuracy.
+    The low accuracy impairs model extraction, yielding inaccurate \strips models in most domains. As a result, the sinusoidal baseline achieves zero or near-zero planning accuracy in four out of five domains, and RoPE in three out of five.
+    
+    In contrast, the LB Transformer achieves high training and test accuracy in every domain, and perfect planning accuracy in four of them.
+    The reason for this large gap in performance is the architectural design of the LB Transformer. 
+    By combining stick-breaking attention, no positional encodings, and strict future masking, the LB Transformer encodes the \textit{order} of tokens (i.e., actions) in the input trace $\tau$ instead of their absolute or relative \textit{positions}.
+    This provides a strong inductive bias that aligns with \strips semantics, where the applicability of an action $a_i$ depends on the most recent preceding action $a_j$ that affects each of its preconditions, regardless of their distance $i-j$ or absolute positions $i,j$.
+    The two baseline models lack this inductive bias and, thus, struggle at the task of learning \strips.
+    
+    \paragraph{RQ2: Comparison between the LS and LB Transformers, and effect of supervision.}
+    Tables~\ref{tab:main-results}--\ref{tab:main-results-cont} show that both the LS and LB Transformers exhibit strong performance under final-state supervision. Of the two, the LS Transformer performs better, achieving perfect training, test and planning accuracy for every seed across all domains.
+    We hypothesize that this improved performance is due to its built-in symbolic structure, in which each parameter defines a separate precondition or effect of the underlying \strips model.
+    
+    Under applicability supervision, the performance of the LS Transformer degrades, showing high variance between seeds. Nonetheless, it still achieves perfect training, test and planning accuracy in every domain for its best seed.
+    These results show that both supervision settings provide enough information for learning the ground-truth \strips model, although final-state supervision facilitates learning.
+    Finally, the LS Transformer performs similarly for the GT and Shared predicate configurations. This allows the LS Transformer to be trained without knowing the number of ground-truth predicates, by using a larger set of hidden predicates.
+    
+    \paragraph{RQ3: \strips model extraction and planning.}
+    Appendix \ref{app:strips-models} contains the \strips models extracted from the transformers in each domain.
+    The ground-truth model, or an equivalent one, is recovered by each transformer in every domain, with two exceptions.
+    First, as shown in Listing~\ref{lst:npuzzle_full}, the LS Transformer trained with applicability supervision learns additional effects for the \texttt{move} action.
+    These effects preserve the underlying dynamics but introduce irrelevant atoms that make planning more expensive.
+    As a result, the planner exhausts its search budget on two problems, yielding a planning accuracy of $0.98$ (see Table~\ref{tab:main-results}).
+    Second, the LB Transformer learns an incorrect \strips model in \lgt, where actions \texttt{drive}, \texttt{fly} and \texttt{load} have missing preconditions for the \texttt{at} predicate (see Listings~\ref{lst:logistics_full}--\ref{lst:logistics_full_continuation}).
+    We believe this is caused by class imbalance, since approximately 95\% of \texttt{at} atoms in the final states are false.
+    Despite this, the LS Transformer correctly recovers the model under the same supervision setting.
+    
+    Tables~\ref{tab:main-results}--\ref{tab:main-results-cont} show that perfect planning accuracy is achieved whenever the correct model is recovered. Thus, the extracted \strips models can be directly used for planning with off-the-shelf symbolic planners. Moreover, because the extracted models are fully interpretable, we can assess whether the transformer has learned the correct dynamics and identify the exact errors when it has not.
+    
+    \paragraph{RQ4: Generalization to longer traces and more objects.}
+    Figure~\ref{fig:bw-gen} reports generalization results for \bw, while Appendix~\ref{app:gen} provides results for the remaining domains.
+    We evaluate generalization to traces containing up to ten times more actions and objects than seen during training.
+    The LS Transformer achieves perfect generalization in both dimensions under both supervision settings, with no loss in accuracy whatsoever.
+    The LB Transformer also exhibits remarkable generalization, with only a slight overall decrease in accuracy.
+    The largest drops occur for object generalization in \bw, where test accuracy decreases from $99.5\%$ to $96.6\%$, and in \lgt, where it starts at $95.6\%$ and plateaus at approximately $80\%$ for the largest number of objects.
+\fi

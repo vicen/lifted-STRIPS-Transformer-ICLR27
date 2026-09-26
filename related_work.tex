@@ -1,19 +1,18 @@
 
 \noindent \textbf{Transformers and World Models}.
-Work on chess and Othello has examined whether transformers trained for next-token prediction track and internally represent the board state using state-tracking, probing, and interventions~\citep{Toshniwal_Wiseman_Livescu_Gimpel_2022,li_iclr,nanda2023linear}.
-In maze-solving tasks, \citet{spies2025transformers} study internal representations of maze connectivity when the connectivity graph is provided
-as input. 
-\citet{rohekar2025a} investigates whether causal structure can be recovered from transformer attention.
-Also, \citet{world-models2} ask whether generative models recover the underlying transition structure, while \citet{vafa2025what} study whether predictive models acquire inductive biases that transfer to new tasks.
-In contrast, we recover an explicit, lifted \strips world model from the trained transformer, rather than only probing its implicit representations.
+Work on chess and Othello probes whether transformers trained for next-token prediction internally represent board states~\citep{Toshniwal_Wiseman_Livescu_Gimpel_2022,li_iclr,nanda2023linear}.
+In maze solving, \citet{spies2025transformers} study representations of an input connectivity graph, while \citet{rohekar2025a} investigate causal structure in attention. 
+\citet{world-models2} ask whether generative models recover the underlying transition structure, while \citet{vafa2025what} study whether predictive models acquire inductive biases that transfer to new tasks.
+Rather than only probing the implicit representations 
+from the trained transformer, we recover explicit lifted \strips models. 
 Another line learns symbolic world models for robot planning from perceptual observations, using neuro-symbolic abstractions and pretrained vision-language models
 \citep{liang2025visualpredicator,liang2026exopredicator,athalye2026pixels}.
 In contrast, we learn without intermediate-state observations, and under applicability supervision no successor states are observed at all. 
 %than probe an implicit world model from symbolic traces without intermediate-state observations. In our applicability setting, no successor states are observed at all. We evaluate the resulting models through prediction and planning, including generalization to longer traces and larger object sets.
 
 \noindent \textbf{Formal Languages and Transformer Generalization}.
-RASP and B-RASP provide abstract languages to characterize soft- and hard-attention transformers, respectively~\citep{rasp,yang2024masked}, with masked hard-attention transformers recognizing exactly the star-free languages~\citep{yang2024masked}.
-This is relevant to planning because valid action sequences in a \strips domain are also star-free~\citep{Lin_Bercher_2022}.
+RASP and B-RASP are abstract languages for reasoning about soft- and masked hard-attention Transformers, respectively~\citep{rasp,yang2024masked}.
+Masked hard-attention Transformers recognize exactly the star-free languages~\citep{yang2024masked}, a class that includes valid action sequences in a \strips domain~\citep{Lin_Bercher_2022}. 
 More recently, C-RASP extended RASP with counting operations to study length generalization in soft-attention transformers~\citep{yang2024counting,huang2025length}.
 \citet{sarrof2026verify} later extended C-RASP to C*-RASP to analyze lifted \strips plan verification with increasing plan lengths and numbers of objects.
 In contrast, we use B-RASP and learn lifted \strips models, with plan verification only as an intermediate step.
@@ -41,8 +40,10 @@ Our work extends~\citet{nunez2026strips} from propositional to lifted \strips mo
 
 \noindent \textbf{Pre-trained LLMs and Symbolic Planning Models}.
 Recent work uses pre-trained LLMs to infer symbolic planning models from natural-language descriptions, demonstrations and simulations~\citep{NEURIPS2023_f9f54762,oswald2024large,yu2025symbolic,huang2026onedemo,hao2026simulation,xie-etal-2025-making}.
-In contrast, we learn lifted action models directly from symbolic traces, without relying on pre-trained semantic knowledge or external simulation.
-This distinction is important because prior exposure to the relevant domain descriptions or dynamics cannot generally be ruled out for pre-trained LLMs, whereas our models learn the dynamics solely from the provided traces.
+By contrast, our models are trained from scratch on symbolic traces and do not rely on pre-trained semantic knowledge.
+%In contrast, we learn lifted action models directly from symbolic traces, without relying on pre-trained semantic knowledge or external simulation.
+%This distinction is important because prior exposure to the relevant domain descriptions or dynamics cannot generally be ruled out for pre-trained LLMs, whereas our models learn the dynamics solely from the provided traces.
+
 
 
 %\noindent \textbf{Pre-trained LLMs and Symbolic Planning Models}.
